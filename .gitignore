@@ -43,3 +43,13 @@ build
 freeglut
 CMake
 .vscode
+
+# I don't remember which is was
+src/Array.cpp
+src/Array.h
+
+# No longer implements the point class
+src/point.cpp
+src/point.h
+
+
