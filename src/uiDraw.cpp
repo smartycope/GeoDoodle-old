@@ -34,7 +34,6 @@
 #include <math.h>
 #endif // _WIN32
 
-#include "point.h"
 #include "uiDraw.h"
 
 using namespace std;
@@ -75,7 +74,7 @@ const char NUMBER_OUTLINES[10][20] =
  * size of the glyph is 8x11 or x+(0..7), y+(0..10)
  *   INPUT  topLeft   The top left corner of the character
  *          digit     The digit we are rendering: '0' .. '9'
- *************************************************************************/
+ *************************************************************************//* 
 void drawDigit(const Point & topLeft, char digit)
 {
    // we better be only drawing digits
@@ -105,16 +104,16 @@ void drawDigit(const Point & topLeft, char digit)
          
       drawLine(start, end);
    }
-}
+} */
 
 /*************************************************************************
  * DRAW NUMBER
  * Display an integer on the screen using the 7-segment method
  *   INPUT  topLeft   The top left corner of the character
  *          digit     The digit we are rendering: '0' .. '9'
- *************************************************************************/
-void drawNumber(const Point & topLeft, int number)
-{
+ *************************************************************************
+
+void drawNumber(const std::pair<int, int> &topLeft, int number) {
    // our cursor, if you will. It will advance as we output digits
    Point point = topLeft;
    
@@ -143,7 +142,7 @@ void drawNumber(const Point & topLeft, int number)
       point.addX(11);
    }
 }
-
+*/
 
 /*************************************************************************
  * DRAW TEXT
@@ -151,16 +150,17 @@ void drawNumber(const Point & topLeft, int number)
  *   INPUT  topLeft   The top left corner of the text
  *          text      The text to be displayed
  ************************************************************************/
-void drawText(const Point & topLeft, const char * text)
+void drawText(const std::pair<int, int> &topLeft, const std::string &text)
 {
    void *pFont = GLUT_BITMAP_HELVETICA_12;  // also try _18
 
    // prepare to draw the text from the top-left corner
-   glRasterPos2f(topLeft.getX(), topLeft.getY());
+   glRasterPos2f(topLeft.first, topLeft.second);
 
    // loop through the text
-   for (const char *p = text; *p; p++)
-      glutBitmapCharacter(pFont, *p);
+//    for (const char *p = text; *p; p++)
+   for (auto it = text.begin(); it != text.end(); it++)
+      glutBitmapCharacter(pFont, *it);
 }
 
 /************************************************************************
@@ -172,9 +172,9 @@ void drawText(const Point & topLeft, const char * text)
  *                   the more line segments we will use
  *          rotation True circles are rotation independent.  However, if you
  *                   are drawing a 3-sided polygon (triangle), this matters!
- *************************************************************************/
-void drawPolygon(const Point & center, int radius, int points, int rotation)
-{
+ *************************************************************************
+ 
+void drawPolygon(const std::pair<int, int> &center, int radius, int points, int rotation) {
    // begin drawing
    glBegin(GL_LINE_LOOP);
 
@@ -182,7 +182,7 @@ void drawPolygon(const Point & center, int radius, int points, int rotation)
    //one point to the next
    for (double i = 0; i < 2 * M_PI; i += (2 * M_PI) / points)
    {
-      Point temp(false /*check*/);
+      Point temp(false);
       temp.setX(center.getX() + (radius * cos(i)));
       temp.setY(center.getY() + (radius * sin(i)));
       rotate(temp, center, rotation);
@@ -193,7 +193,7 @@ void drawPolygon(const Point & center, int radius, int points, int rotation)
    glEnd();
 
 }
-
+*/
 
 /************************************************************************
  * ROTATE
@@ -203,15 +203,15 @@ void drawPolygon(const Point & center, int radius, int points, int rotation)
  *           center   The center point we will rotate around
  *           rotation Rotation in degrees
  *    OUTPUT point    The new position
- *************************************************************************/
-void rotate(Point & point, const Point & origin, int rotation)
-{
+ *************************************************************************
+ 
+void rotate(std::pair<int, int> &point, const std::pair<int, int> &origin, int rotation){
    // because sine and cosine are expensive, we want to call them only once
    double cosA = cos(deg2rad(rotation));
    double sinA = sin(deg2rad(rotation));
 
    // remember our original point
-   Point tmp(false /*check*/);
+   Point tmp(false);
    tmp.setX(point.getX() - origin.getX());
    tmp.setY(point.getY() - origin.getY());
 
@@ -223,6 +223,7 @@ void rotate(Point & point, const Point & origin, int rotation)
                                 tmp.getY() * cosA) +
               origin.getY());
 }
+*/
 
 /************************************************************************
  * DRAW LINE
@@ -230,16 +231,15 @@ void rotate(Point & point, const Point & origin, int rotation)
  *   INPUT  begin     The position of the beginning of the line
  *          end       The position of the end of the line
  *************************************************************************/
-void drawLine(const Point & begin, const Point & end,
-              float red, float green, float blue)
-{
+void drawLine(const std::pair<int, int> &begin, const std::pair<int, int> &end,
+              float red, float green, float blue) {
    // Get ready...
    glBegin(GL_LINES);
    glColor3f(red, green, blue);
 
    // Draw the actual line
-   glVertex2f(begin.getX(), begin.getY());
-   glVertex2f(  end.getX(),   end.getY());
+   glVertex2f(begin.first, begin.second);
+   glVertex2f(  end.first,   end.second);
 
    // Complete drawing
    glColor3f(1.0 /* red % */, 1.0 /* green % */, 1.0 /* blue % */);
@@ -288,13 +288,14 @@ double random(double min, double max)
  *         width     Horizontal size
  *         height    Vertical size
  *         rotation  Orientation
- *************************************************************************/
-void drawRect(const Point & center, int width, int height, int rotation)
+ *************************************************************************
+ 
+void drawRect(const std::pair<int, int> &center, int width, int height, int rotation)
 {
-   Point tl(false /*check*/); // top left
-   Point tr(false /*check*/); // top right 
-   Point bl(false /*check*/); // bottom left
-   Point br(false /*check*/); // bottom right
+   Point tl(false); // top left
+   Point tr(false); // top right 
+   Point bl(false); // bottom left
+   Point br(false); // bottom right
 
    //Top Left point
    tl.setX(center.getX() - (width  / 2));
@@ -327,6 +328,7 @@ void drawRect(const Point & center, int width, int height, int rotation)
    glVertex2f(tl.getX(), tl.getY());
    glEnd();
 }
+*/
 
 /************************************************************************
  * DRAW CIRCLE
@@ -334,7 +336,7 @@ void drawRect(const Point & center, int width, int height, int rotation)
  *  INPUT   center   Center of the circle
  *          radius   Size of the circle
  *************************************************************************/
-void drawCircle(const Point & center, int radius)
+void drawCircle(const std::pair<int, int> &center, int radius)
 {
    assert(radius > 1.0);
    const double increment = 1.0 / (double)radius;
@@ -344,8 +346,8 @@ void drawCircle(const Point & center, int radius)
 
    // go around the circle
    for (double radians = 0; radians < M_PI * 2.0; radians += increment)
-      glVertex2f(center.getX() + (radius * cos(radians)),
-                 center.getY() + (radius * sin(radians)));
+      glVertex2f(center.first + (radius * cos(radians)),
+                 center.second + (radius * sin(radians)));
    
    // complete drawing
    glEnd();   
@@ -356,15 +358,15 @@ void drawCircle(const Point & center, int radius)
  * Draw a single point on the screen, 2 pixels by 2 pixels
  *  INPUT point   The position of the dow
  *************************************************************************/
-void drawDot(const Point & point){
+void drawDot(const std::pair<int, int> &point){
    // Get ready, get set...
    glBegin(GL_POINTS);
 
    // Go...
-   glVertex2f(point.getX(),     point.getY()    );
-   glVertex2f(point.getX() + 1, point.getY()    );
-   glVertex2f(point.getX() + 1, point.getY() + 1);
-   glVertex2f(point.getX(),     point.getY() + 1);
+   glVertex2f(point.first,     point.second    );
+   glVertex2f(point.first + 1, point.second    );
+   glVertex2f(point.first + 1, point.second + 1);
+   glVertex2f(point.first,     point.second + 1);
 
    // Done!  OK, that was a bit too dramatic
    glEnd();

@@ -32,16 +32,15 @@
 #ifdef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
-#include <Gl/glut.h>           // OpenGL library we copied
+#include <GL/glut.h>           // OpenGL library we copied
 #include <ctime>            // for ::Sleep();
-#include <Windows.h>
+#include <windows.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 #endif // _WIN32
 
 #include "uiInteract.h"
-#include "point.h"
 
 using namespace std;
 
@@ -57,8 +56,7 @@ using namespace std;
  * that we are idle.  the nanosleep function performs this task for us
  *   INPUT: msSleep: sleep time in milliseconds
  *********************************************************************/
-void sleep(unsigned long msSleep)
-{
+void sleep(unsigned long msSleep) {
    // Windows handles sleep one way
 #ifdef _WIN32
    ::Sleep(msSleep + 35);
@@ -90,6 +88,7 @@ void sleep(unsigned long msSleep)
  *************************************************************************/
 void drawCallback(){
    // even though this is a local variable, all the members are static
+//    std::cout << "Drawing...\n";
    Interface ui;
    // Prepare the background buffer for drawing
    glClear(GL_COLOR_BUFFER_BIT); //clear the screen
@@ -111,6 +110,8 @@ void drawCallback(){
 
    // clear the space at the end
    ui.keyEvent();
+
+   ui.modKeyEvent();
 }
 
 /************************************************************************
@@ -126,6 +127,7 @@ void keyDownCallback(int key, int x, int y){
    //std::cout << "Key Down Callback x = " << x << ", y = " << y << endl;
    Interface ui;
    ui.keyEvent(key, true /*fDown*/);
+   ui.modKeyEvent(glutGetModifiers(), true);
 }
 
 /************************************************************************
@@ -140,6 +142,7 @@ void keyUpCallback(int key, int x, int y){
    //std::cout << "Key up Callback x = " << x << ", y = " << y << endl;
    Interface ui;
    ui.keyEvent(key, false /*fDown*/);
+   ui.modKeyEvent(glutGetModifiers(), false);
 }
 
 /***************************************************************
@@ -153,6 +156,7 @@ void keyboardCallback(unsigned char key, int x, int y){
    //std::cout << "Keyboard Callback x = " << x << ", y = " << y << endl;
    Interface ui;
    ui.keyEvent(key, true /*fDown*/);
+   ui.modKeyEvent(glutGetModifiers(), true);
    /* ui.mouseLoc.first  = x;
    ui.mouseLoc.second = y; */
 }
@@ -161,15 +165,28 @@ void mouseCallback(int button, int state, int x, int y){
    if(state == GLUT_DOWN){
       Interface ui;
       ui.keyEvent(button, true /*fDown */);
-      ui.setMouseLoc(x, y);
+      // the 200 is because this reads from the top left corner, but uiDraw.cpp writes from the center (i.e. where (0, 0) is)
+      ui.setMouseLoc(x - 200, -(y - 200)); // update this to use topLeft and bottomRight isntead
    }
    //std::cout << "Mouse Callback has been initiated! Its x = " << x << ", and its y = " << y << std::endl;
 }
+/* 
+int glutGetModifiers(){
+    Interface ui;
+    ui.keyEvent()
+    std::cout << "Will I ever get called?\n";
+    // return GLUT_ACTIVE_CTRL;
+} */
 
 void mouseMotionCallback(int x, int y){
    Interface ui;
    ui.keyEvent(MOUSE_MOVES, true);
-   ui.setMouseLoc(x, y);
+   // the 100 is because this reads from the top left corner, but uiDraw.cpp writes from the center (i.e. where (0, 0) is)
+   ui.setMouseLoc(x - 200, -(y - 200));
+}
+
+void setMouse(bool hidden){
+    glutSetCursor((hidden ? 0x0065 : 0x0000));
 }
 
 /***************************************************************
@@ -180,9 +197,9 @@ void mouseMotionCallback(int x, int y){
  ****************************************************************/
 void Interface::keyEvent(int key, bool fDown){
    switch(key){
-      case GLUT_KEY_DOWN:
-         isDownPress = fDown;
-         break;
+        case GLUT_KEY_DOWN:
+            isDownPress = fDown;
+            break;
       case GLUT_KEY_UP:
          isUpPress = fDown;
          break;
@@ -195,6 +212,9 @@ void Interface::keyEvent(int key, bool fDown){
       case GLUT_KEY_HOME:
       case ' ':
          isSpacePress = fDown;
+         break;
+      case GLUT_KEY_F5:
+         isF5Press = fDown;
          break;
       case 'c':
          isCPress = fDown;
@@ -216,11 +236,65 @@ void Interface::keyEvent(int key, bool fDown){
          break;
       case 13:
          isEnterPress = fDown;
-         std::cout << "Enter has been pressed.\n";
          break;
+      case 'Q':
+         isBigQPress = fDown;
+         break;
+      case 'm':
+         isMPress = fDown;
+         break;
+      case '/':
+         isSlashPress = fDown;
+         break;
+      case '?':
+         isQuestionPress = fDown;
+         break;
+      case 's':
+         isSPress = fDown;
+         break;
+      case 'S':
+         isBigSPress = fDown;
+         break;
+      case GLUT_KEY_F9:
+         isF9Press = fDown;
+         break;
+        case 'z':
+        case 'Z':
+            isZPress = fDown;
+            break;
+
+      /*
+        case '':
+            isPress = fDown;
+            break;
+      */
       // add key here
    }
 }
+
+void Interface::modKeyEvent(int key, bool fDown){
+   switch(key){
+       case GLUT_ACTIVE_CTRL:
+            isCtrlPress = fDown;
+            // std::cout << "Control has been pressed\n";
+            break;
+        case GLUT_ACTIVE_ALT:
+            isAltPress = fDown;
+            // std::cout << "Alt has been pressed\n";
+            break;
+        case GLUT_ACTIVE_SHIFT:
+            isShiftPress = fDown;
+            // std::cout << "Shift has been pressed\n";
+            break;
+   }
+}
+
+void Interface::modKeyEvent(){
+    isAltPress = false;
+    isCtrlPress = false;
+    isShiftPress = false;
+}
+
 /***************************************************************
  * INTERFACE : KEY EVENT
  * Either set the up or down event for a given key
@@ -244,6 +318,22 @@ void Interface::keyEvent(){
    isMouseMoving  = false;
    isBigXPress  = false;
    isEnterPress = false;
+   isBigQPress  = false;
+   isMPress     = false;
+   isSlashPress = false;
+   isQuestionPress = false;
+   isSPress    = false;
+   isBigSPress = false;
+   isF5Press   = false;
+   isF9Press   = false;
+   isCtrlPress = false;
+//    isAltPress = false;
+//    isShiftPress = false;
+//    isZPress = false;
+
+   /*
+   isPress = false;
+   */
    // add key here
 }
 
@@ -290,23 +380,35 @@ bool         Interface::isCPress     = false;
 bool         Interface::isXPress     = false;
 bool         Interface::isMouseClick = false;
 bool         Interface::isMouseRightClick = false;
-std::pair<int, int> Interface::mouseLoc = {20, 20};
+std::pair<int, int> Interface::mouseLoc(20, 20);
 bool         Interface::isMouseMoving = false;
 bool         Interface::isBigXPress  = false;
 bool         Interface::isEnterPress = false; 
+bool         Interface::isBigQPress  = false;
+bool         Interface::isMPress     = false;
+bool         Interface::isSlashPress = false;
+bool         Interface::isQuestionPress = false;
+bool         Interface::isSPress      = false;
+bool         Interface::isBigSPress   = false;
+bool         Interface::isF5Press     = false;
+bool         Interface::isF9Press     = false;
+bool         Interface::isCtrlPress   = false;
+bool         Interface::isAltPress    = false;
+bool         Interface::isShiftPress  = false;
+bool         Interface::isZPress      = false;
+
+/*
+bool         Interface::isPress      = false;
+*/
 // add key here
+
 bool         Interface::initialized  = false;
 double       Interface::timePeriod   = 1.0 / 30; // default to 30 frames/second
 unsigned int Interface::nextTick     = 0;        // redraw now please
 void *       Interface::p            = NULL;
 void (*Interface::callBack)(const Interface *, void *) = NULL;
 
-
-/************************************************************************
- * INTERFACE : DESTRUCTOR
- * Nothing here!
- ***********************************************************************/
-Interface::~Interface(){   }
+Interface::~Interface(){ }
 
 /************************************************************************
  * INTEFACE : INITIALIZE
@@ -317,7 +419,7 @@ Interface::~Interface(){   }
  *           argv:       The actual command-line parameters
  *           title:      The text for the titlebar of the window
  *************************************************************************/
-void Interface::initialize(int argc, char ** argv, const char * title, Point topLeft, Point bottomRight){
+void Interface::initialize(int argc, char ** argv, const char * title, std::pair<int, int> topLeft, std::pair<int, int> bottomRight){
    if (initialized)
       return;
    
@@ -326,20 +428,20 @@ void Interface::initialize(int argc, char ** argv, const char * title, Point top
 
    // create the window
    glutInit(&argc, argv);
-   Point point;
+   std::pair<int, int> point;
    glutInitWindowSize(   // size of the window
-      (int)(bottomRight.getX() - topLeft.getX()),
-      (int)(topLeft.getY() - bottomRight.getY()));
+      (bottomRight.first - topLeft.first),
+      (topLeft.second - bottomRight.second));
             
-   glutInitWindowPosition( 10, 10);                // initial position 
+   glutInitWindowPosition(10, 10);                // initial position 
    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);  // double buffering
    glutCreateWindow(title);              // text on titlebar
-   glutIgnoreKeyRepeat(true);
+   glutIgnoreKeyRepeat(true); // previously true
    
    // set up the drawing style: B/W and 2D
    glClearColor(BACKGROUND_COLOR);          // Black is the background color
-   gluOrtho2D((int)topLeft.getX(), (int)bottomRight.getX(),
-              (int)bottomRight.getY(), (int)topLeft.getY()); // 2D environment
+   gluOrtho2D(topLeft.first, bottomRight.first,
+              bottomRight.second, topLeft.second); // 2D environment
 
    // register the callbacks so OpenGL knows how to call us
    glutDisplayFunc(   drawCallback    );
@@ -374,6 +476,8 @@ void Interface::run(void (*callBack)(const Interface *, void *), void *p) {
    // setup the callbacks
    this->p = p;
    this->callBack = callBack;
+
+//    std::cout << "Running...\n";
    
    glutMainLoop();
 

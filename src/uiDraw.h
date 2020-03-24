@@ -15,7 +15,6 @@
 
 #include <string>     // To display text on the screen
 #include <cmath>      // for M_PI, sin() and cos()
-#include "point.h"    // Where things are drawn
 using std::string;
 
 /************************************************************************
@@ -23,62 +22,62 @@ using std::string;
  * Draw a single digit in the old school line drawing style.  The
  * size of the glyph is 8x11 or x+(0..7), y+(0..10)
  *************************************************************************/
-void drawDigit(const Point & topLeft, char digit);
+// void drawDigit(const std::pair<int, int> &topLeft, char digit);
 
 /*************************************************************************
  * DRAW NUMBER
  * Display an integer on the screen using the 7-segment method
  *************************************************************************/
-void drawNumber(const Point & topLeft, int number);
+// void drawNumber(const std::pair<int, int> &topLeft, int number);
 
 /*************************************************************************
  * DRAW TEXT
  * Draw text using a simple bitmap font
  ************************************************************************/
-void drawText(const Point & topLeft, const char * text);
+void drawText(const std::pair<int, int> &topLeft, std::string);
 
 /************************************************************************
  * ROTATE
  * Rotate a given point (point) around a given origin (center) by a given
  * number of degrees (angle).
  *************************************************************************/
-void rotate(Point & point, const Point & origin, int rotation = 0);
+// void rotate(std::pair<int, int> &point, const std::pair<int, int> &origin, int rotation = 0);
 
 /************************************************************************
  * DRAW RECTANGLE
  * Draw a rectangle on the screen centered on a given point (center) of
  * a given size (width, height), and at a given orientation (rotation)
- * measured in degrees (0 - 360)
+ * measured in degrees (0 - 360)	
  *************************************************************************/
-void drawRect(const Point & center, int width, int height, int rotation);
+// void drawRect(const std::pair<int, int> &center, int width, int height, int rotation);
 
 /************************************************************************
  * DRAW CIRCLE
  * Draw a circle from a given location (center) of a given size (radius).
  *************************************************************************/
-void drawCircle(const Point & center, int radius);
+void drawCircle(const std::pair<int, int> &center, int radius);
 
 /************************************************************************
  * DRAW POLYGON
  * Draw a polygon from a given location (center) of a given size (radius).
  *************************************************************************/
-void drawPolygon(const Point & center,
-                 int radius = 20,
-                 int points = 4,
-                 int rotation = 0);
+// void drawPolygon(const std::pair<int, int> & center,
+//                  int radius = 20,
+//                  int points = 4,
+//                  int rotation = 0);
 
 /************************************************************************
  * DRAW LINE
  * Draw a line on the screen from the beginning to the end.
  *************************************************************************/
-void drawLine(const Point & begin, const Point & end,
+void drawLine(const std::pair<int, int> &begin, const std::pair<int, int> &end,
              float red = 1.0, float green = 1.0, float blue = 1.0);
 
 /************************************************************************
  * DRAW DOT
  * Draw a single point on the screen, 2 pixels by 2 pixels
  *************************************************************************/
-void drawDot(const Point & point);
+void drawDot(const std::pair<int, int> &point);
 
 //void generateArray(int x, int y);
 

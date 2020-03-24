@@ -5,288 +5,299 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
-
-using namespace std;
+#include <math.h>
 
 #define OFF_SCREEN_BORDER_AMOUNT 10 // how far off screen stuff goes
-#define RADIUS 5			  		// radius of the focus circle
-#define KEY_REPEAT_DELAY 9     		// 
-#define TEXT_DISPLAY_DELAY 10 		// how long the welcome text stays on the screen 100+
-#define WELCOME_TEXT_1 "Welcome to GeoDoodle! Move the mouse or use the arrow keys,"
-#define WELCOME_TEXT_2 "and then click or press the space bar to make a line."
-#define WELCOME_TEXT_3 "Press x to undo or cancel a line, and c or right click to"
-#define WELCOME_TEXT_4 "automaticaly start a new line. Created by Copeland Carter."
 
-/* 
-*	Unitl I find some way to explain in game what which keys do what...
-* 	Arrow keys controls the focus (the circle)
-*	Space starts and finishes a line
-*	c finishes a line and then starts a new one
-*	x cancels the current line
- */
+std::pair<int, int> center(0, 0);
+std::pair<int, int> Game::bottomRight;
+std::pair<int, int> Game::topLeft;
 
-/***************************************
- * GAME CONSTRUCTOR
- ***************************************/
-Point center(0, 0);
-Point Game::bottomRight;
-Point Game::topLeft;
-
-Game::Game(const Point &tl, const Point &br) :
-dots(Array()) {
+Game::Game(const std::pair<int, int> &tl, const std::pair<int, int> &br) :
+dots(Array(tl, br)) {
 	topLeft = tl;
 	bottomRight = br;
+    isBigErase.push_back(-1);
 }
 
-/****************************************
- * GAME DESTRUCTOR
- ****************************************/
 Game :: ~Game(){ }
-
-void Game::advance(){
-	if (timedFade >= TEXT_DISPLAY_DELAY){
-		dots.drawArray();
-		dots.drawFocus(RADIUS);
-
-		//for (auto it = pattern.begin(); it != pattern.end(); it++){
-		//	it.drawMyLine();
-		//}
-		
-		// draw all the lines
-		for (int i = 0; i < pattern.size(); i++){
-			if(pattern[i].getFinished()){
-			pattern[i].drawMyLine();
-			}
-		}
-
-		// draw the line in progress
-		if (pattern.empty() ? false : not pattern.back().getFinished()){
-			Line tmp(pattern.back().getIndexes().first, dots.getFocus());
-			tmp.drawMyLine();
-		}
-	}
-	// starting screen
-	else{
-		//Point center(0,0);
-		//drawRect(center, 150, 100, 0);
-
-		Point line1(-180, 50);
-		Point line2(-148, 25);
-		Point line3(-155, 0);
-		Point line4(-163, -25);
-
-		drawText(line1, WELCOME_TEXT_1);
-		drawText(line2, WELCOME_TEXT_2);
-		drawText(line3, WELCOME_TEXT_3);
-		drawText(line4, WELCOME_TEXT_4);
-		
-		timedFade++;
-	}
-
-	if(not metaLines.empty())
-		for(int i = 0; i <= metaLines.size(); i++)
-			metaLines[i].drawMyLine();
-
-	drawBorderPoints();
-}
 
 /**************************************************************************
  * GAME :: IS ON SCREEN
  * Determines if a given point is on the screen.
  **************************************************************************/
-bool Game::isOnScreen(const Point& point){
-	return (point.getX() >= topLeft.getX() - OFF_SCREEN_BORDER_AMOUNT
-		 && point.getX() <= bottomRight.getX() + OFF_SCREEN_BORDER_AMOUNT
-		 && point.getY() >= bottomRight.getY() - OFF_SCREEN_BORDER_AMOUNT
-		 && point.getY() <= topLeft.getY() + OFF_SCREEN_BORDER_AMOUNT);
+bool Game::isOnScreen(const std::pair<int, int> &point){
+	return (point.first >= topLeft.first - OFF_SCREEN_BORDER_AMOUNT
+		 && point.first <= bottomRight.first + OFF_SCREEN_BORDER_AMOUNT
+		 && point.second >= bottomRight.second - OFF_SCREEN_BORDER_AMOUNT
+		 && point.second <= topLeft.second + OFF_SCREEN_BORDER_AMOUNT);
 }
 
-void Game::drawBorderPoints(){
-    if (not borderIndexes.empty()){
-		assert(false);
-		cout << "Drawing points\n";
-        for(int i = 0; i <= borderIndexes.size(); i++){
-            drawRect(dots.array[borderIndexes[i].first][borderIndexes[i].second], 6, 6, 45);
+bool Game::isCloseEnough(int from, int to, int tolerance){
+    if( (from < (to + tolerance)) and
+        (from > (to - tolerance)) )
+            return true;
+    else
+        return false;       
+}
+
+void Game::repeatLine(){
+    if (pattern.back().isFinished){
+        tmpLines.clear();
+        if (drawMetaLines and (boundsX.size() == 4)){
+            if(((pattern.back().start.first  <= metaLines.front().end.first)   and
+                (pattern.back().start.first  >= metaLines.front().start.first) and
+                (pattern.back().start.second <= metaLines.front().end.second)  and
+                (pattern.back().start.second >= metaLines.back().start.second)) or // <--
+                // 'and' for both points must be inside the area, 'or' if only one point has to be inside the area.
+               ((pattern.back().end.first  <= metaLines.front().end.first)   and
+                (pattern.back().end.first  >= metaLines.front().start.first) and
+                (pattern.back().end.second <= metaLines.front().end.second)  and
+                (pattern.back().end.second >= metaLines.back().start.second)) ) {
+
+                isBigErase.push_back(0);
+                
+                std::vector<Line> newPattern;
+                int width, height, xOffset, xEndOffset, yOffset, yEndOffset;
+                
+                // Uncomment this line if you want the lines within the area to stay
+                // newPattern.push_back(pattern.back()); // add the current Line to newPattern
+
+                // relate the start points to the top left corner, and the end points to the start points
+                xOffset = pattern.back().start.first  - metaLines.front().start.first;
+                yOffset = pattern.back().start.second - metaLines.front().start.second;
+                xEndOffset = pattern.back().end.first  - pattern.back().start.first;
+                yEndOffset = pattern.back().end.second - pattern.back().start.second;
+
+                height = metaLines.front().start.second - metaLines.back().start.second;
+                width  = metaLines.front().end.first - metaLines.front().start.first;
+
+                eraseCount = 0;
+
+                // iterate through the array by the offset and create new points at every junction
+                for (int ys = yOffset - topLeft.second - OFF_SCREEN_AMOUNT - height;
+                        ys <= topLeft.second + yOffset + OFF_SCREEN_AMOUNT + height + 1;
+                        ys += height){
+                    for (int xs = xOffset - bottomRight.first - OFF_SCREEN_AMOUNT - width;
+                                xs <= bottomRight.first + xOffset + OFF_SCREEN_AMOUNT + width + 1;
+                                xs += width){                                
+
+                        std::pair<int, int> startPoint(xs + X_ADJUST + 2, ys + Y_ADJUST + 2);
+                        std::pair<int, int> endPoint(xs + xEndOffset + X_ADJUST + 2, ys + yEndOffset + Y_ADJUST + 2);
+                        Line tmp2(startPoint, endPoint);
+                        newPattern.push_back(tmp2);
+                        ++eraseCount;
+                    }
+                }
+
+                for (auto it = newPattern.begin(); it != newPattern.end(); it++){
+                    pattern.push_back(*it);
+                }
+            } // end of if statement
+            else{
+                if (isBigErase.back() >= 0){
+                    ++isBigErase.back();// = isBigErase.back() + 1;
+                }
+            }        
+        }
+    }
+    else { // if the line is unfinished
+        if (drawMetaLines and (boundsX.size() == 4)){
+            if( (pattern.back().start.first  <= metaLines.front().end.first)   and
+                (pattern.back().start.first  >= metaLines.front().start.first) and
+                (pattern.back().start.second <= metaLines.front().end.second)  and
+                (pattern.back().start.second >= metaLines.back().start.second) ) {
+
+                // isBigErase.push_back(0);
+
+                // relate the start points to the top left corner, and the end points to the start points
+                int xOffset = pattern.back().start.first  - metaLines.front().start.first;
+                int yOffset = pattern.back().start.second - metaLines.front().start.second;
+                // int xEndOffset = dots.getFocus().first  - pattern.back().start.first;
+                // int yEndOffset = dots.getFocus().second - pattern.back().start.second;
+
+                int height = metaLines.front().start.second - metaLines.back().start.second;
+                int width  = metaLines.front().end.first - metaLines.front().start.first;
+
+                // iterate through the array by the offset and create new points at every junction
+                for (int ys = yOffset - topLeft.second - OFF_SCREEN_AMOUNT - height;
+                        ys <= topLeft.second + yOffset + OFF_SCREEN_AMOUNT + height + 1;
+                        ys += height){
+                    for (int xs = xOffset - bottomRight.first - OFF_SCREEN_AMOUNT - width;
+                                xs <= bottomRight.first + xOffset + OFF_SCREEN_AMOUNT + width + 1;
+                                xs += width){
+                        std::pair<int, int> startPoint(xs + X_ADJUST + 2, ys + Y_ADJUST + 2);
+                        Line tmp3(startPoint);
+                        tmpLines.push_back(tmp3);
+                    }
+                }
+            } // end of if statement
+            else {
+                if (isBigErase.back() >= 0){
+                    ++isBigErase.back();
+                }
+            }
         }
     }
 }
 
-/***************************************
- * GAME :: HANDLE INPUT
- * accept input from the user
- ***************************************/
-void Game::handleInput(const Interface& ui){
 
-	if (ui.isLeft()){
-        // Left arrow code
-		allowLeft++;
-		if (allowLeft > KEY_REPEAT_DELAY or allowLeft == 1){
-			dots.setFocusX(dots.getFocusX() - 1);
-		}
-		ignoreMouse = true;
-	}
 
-	if (not bool(ui.isLeft())){
-		// up arrow released code
-		allowLeft = 0;
-	}
+/* 
+void Game::drawBorderPoints(){
+    if (not borderIndexes.empty()){
+		// assert(false);
+		// std::cout << "Drawing points\n";
+        for(int i = 0; i <= borderIndexes.size(); i++){
+            drawRect(dots.array[borderIndexes[i].first][borderIndexes[i].second], 6, 6, 45);
+        }
+    }
+} */
 
-	if (ui.isRight()){
-        // right arrow code
-		allowRight++;
-		if (allowRight > KEY_REPEAT_DELAY or allowRight == 1){
-			dots.setFocusX(dots.getFocusX() + 1);
-		}
-		ignoreMouse = true;
-	}
+// My hacked functions of Brigham's that use message pack
+// template<class Stored>
+/* std::string Game::serialize(Stored content) {
+  std::ostringstream os(std::ios::binary);
+  msgpack::pack(os, src);
+  return os.str();
+} */
 
-	if (not bool(ui.isRight())){
-		// up arrow released code
-		allowRight = 0;
-	}
-	
-	if (ui.isUp()){
-		// up arrow code
-		allowUp++;
-		if (allowUp > KEY_REPEAT_DELAY or allowUp == 1){
-			dots.setFocusY(dots.getFocusY() - 1);
-		}
-		ignoreMouse = true;
-	}
+// template<class Stored1>
+/* Stored1 Game::deserialize(const std::string &str) {
+  std::ostringstream os;
+  Stored1 structure;
 
-	if (not bool(ui.isUp())){
-		// up arrow released code
-		allowUp = 0;
-	}
+  msgpack::object_handle oh = msgpack::unpack(str.data(), str.size());
 
-	if (ui.isDown()){
-		// down arrow code
-		allowDown++;
-		if (allowDown > KEY_REPEAT_DELAY or allowDown == 1){
-			dots.setFocusY(dots.getFocusY() + 1);
-		}
-		ignoreMouse = true;
-	}
+    // deserialized object is valid during the msgpack::object_handle instance is alive.
+  msgpack::object deserialized = oh.get();
+  deserialized.convert(structure);  
 
-	if (not bool(ui.isDown())){
-		// up arrow released code
-		allowDown = 0;
-	}
-
-	// Check for "Spacebar"
-	if (ui.isSpace()) {
-		// spacebar code
-		// are you still holding an unfinished line?
-		if (pattern.empty() ? true : pattern.back().getFinished()){
-			Line l(dots.getFocus());
-			pattern.push_back(l);
-		} 
-		else{
-			pattern.back().finish(dots.getFocus());
-		}
-	}
-
-	if (ui.isC() and (pattern.empty() ? false : not pattern.back().getFinished())){
-		// c code (not to be confused with C code)
-		pattern.back().finish(dots.getFocus());
-		Line tmp1(dots.getFocus());
-		pattern.push_back(tmp1);
-	}
-
-	if (ui.isX() and not pattern.empty()){
-		pattern.pop_back();
-	}
-
-	if(ui.isMouseClicked()){
-		// move the focus to the right place
-		// don't make another line if you don't want it to
-		if(rightLastClicked and pattern.back().getFinished())
-			pattern.pop_back();
-		rightLastClicked = false;
-
-		Point cursor(ui.getMouseLoc().first, ui.getMouseLoc().second);
-		dots.setFocus(dots.pointToIndex(cursor));
-
-		if (pattern.empty() ? true : pattern.back().getFinished()){
-			Line p(dots.pointToIndex(cursor));
-			pattern.push_back(p);
-		} 
-		else{
-			pattern.back().finish(dots.pointToIndex(cursor));
-		}
-		//cout << "Mouse x = " << ui.getMouseLoc().first << " | Mouse y = " << ui.getMouseLoc().second << endl;
-	}
-
-	if(ui.isMouseRightClicked()){
-		rightLastClicked = true;
-		Point cursor(ui.getMouseLoc().first, ui.getMouseLoc().second);
-		dots.setFocus(dots.pointToIndex(cursor));
-
-		if (pattern.empty() ? true : pattern.back().getFinished()){
-			Line s(dots.pointToIndex(cursor));
-			pattern.push_back(s);
-		} 
-		else{
-			pattern.back().finish(dots.pointToIndex(cursor));
-			Line d(dots.pointToIndex(cursor));
-			pattern.push_back(d);
-		}
-	}
-
-	if(not ignoreMouse){
-		Point curser(ui.getMouseLoc().first, ui.getMouseLoc().second);
-		dots.setFocus(dots.pointToIndex(curser));
-	}
-
-	if(ui.isMouseMoved()){
-		ignoreMouse = false;
-	}
-
-	if(ui.isBigX()){
-		//dots[dots.getFocus()];
-		for (int i = 0; i < pattern.size(); i++){
-			if ((pattern[i].getIndexes().first == dots.getFocus()) or 
-				(pattern[i].getIndexes().second== dots.getFocus())){
-				pattern.erase(pattern.begin() + i);
-			}
-		}
-	}
-
-	if(ui.isEnter()){
-		bounds.push_back(dots.getFocus());
-		for(int i = 0; i <= bounds.size(); i++){
-			borderIndexes[i] = bounds[i];
-		}
-		if (bounds.size() >= 4){
-			std::sort(bounds.begin(), bounds.end());
-			corners["top left"].first      = bounds.front().first;
-			corners["bottom left"].first   = bounds.front().first;
-
-			corners["top right"].first     = bounds.back().first;
-			corners["bottom right"].first  = bounds.back().first;
-
-			for(int i = 0; i >= bounds.size(); i++){
-			    int tmp = bounds[i].first;
-				bounds[i].first = bounds[i].second;
-				bounds[i].second = tmp;
-			}
-
-			std::sort(bounds.begin(), bounds.end());
-			corners["bottom left"].second  = bounds.front().first;
-			corners["bottom right"].second = bounds.front().first;
-
-			corners["top left"].second     = bounds.back().first;
-			corners["top right"].second    = bounds.back().first;
-
-			Line right (corners["bottom right"], corners["top right"]);
-			Line left  (corners["bottom left"],  corners["top left"]);
-			Line top   (corners["top left"],     corners["top right"]);
-			Line bottom(corners["bottom left"],  corners["bottom right"]);
-
-			metaLines.push_back(right);
-			metaLines.push_back(left);
-			metaLines.push_back(top);
-			metaLines.push_back(bottom);
-		}
-	}
+//   std::istringstream SData(data, std::ios::binary);
+//   cereal::PortableBinaryInputArchive Archive(SData);
+//   Archive(structure);
+  return deserialized; // if this doesn't work, maybe make this return structure?
+} */
+/* 
+// template<class T>
+void Game::saveDataToFile(T data, std::string fileName) {
+//   std::ofstream os(fileName);
+//   msgpack::pack(os, src);
+    std::ofstream fout(fileName);
+    nlohmann::json jsn(data);
+    std::fout << jsn;
+    fout.close();
 }
+
+// template<class T1>
+T1 Game::getDataFromFile(const std::string &fileName) {
+  std::ifstream fin(fileName);
+  nlohmann::json jsn;
+  fin >> jsn;
+  return jsn.get<T1>();
+} */
+
+  /* T1 structure;
+  msgpack::object_handle oh = msgpack::unpack(str.data(), str.size());
+  msgpack::object deserialized = oh.get();
+  deserialized.convert(structure);
+  return deserialized; */
+// }
+
+
+
+// message pack API example
+/* int main(void)
+{
+    msgpack::type::tuple<int, bool, std::string> src(1, true, "example");
+
+    // serialize the object into the buffer.
+    // any classes that implements write(const char*,size_t) can be a buffer.
+    std::stringstream buffer;
+    msgpack::pack(buffer, src);
+
+    // send the buffer ...
+    buffer.seekg(0);
+
+    // deserialize the buffer into msgpack::object instance.
+    std::string str(buffer.str());
+
+    msgpack::object_handle oh =
+        msgpack::unpack(str.data(), str.size());
+
+    // deserialized object is valid during the msgpack::object_handle instance is alive.
+    msgpack::object deserialized = oh.get();
+
+    // msgpack::object supports ostream.
+    std::cout << deserialized << std::endl;
+
+    // convert msgpack::object instance into the original type.
+    // if the type is mismatched, it throws msgpack::type_error exception.
+    msgpack::type::tuple<int, bool, std::string> dst;
+    deserialized.convert(dst);
+
+    // or create the new instance
+    msgpack::type::tuple<int, bool, std::string> dst2 =
+        deserialized.as<msgpack::type::tuple<int, bool, std::string> >();
+
+    return 0;
+} */
+
+
+
+// Brigham's functions for serialization
+/* template<class Stored>
+std::string serialize(Stored content, int flag = 0) {
+  std::ostringstream os(std::ios::binary);
+  if(flag == 0) {
+    cereal::PortableBinaryOutputArchive ar(os);
+    ar(content);
+  } else {
+    cereal::JSONOutputArchive ar(os);
+    ar(content);
+  }
+  return os.str();
+}
+
+template<class Stored>
+Stored deserialize(const std::string &data, int flag = 0) {
+  std::ostringstream os;
+  Stored structure;
+  if(flag == 0) {
+    std::istringstream SData(data, std::ios::binary);
+    cereal::PortableBinaryInputArchive Archive(SData);
+    Archive(structure);
+  } else {
+    std::istringstream SData(data);
+    cereal::JSONInputArchive Archive(SData);
+    Archive(structure);
+  }
+  return structure;
+}
+
+template<class T>
+void saveDataToFile(T data, std::string fileName, int flag = 0) {
+  std::ofstream outputStream(fileName);
+  if(flag == 0) {
+    cereal::PortableBinaryOutputArchive archive(outputStream);
+    archive(data);
+  } else if(flag == 1) {
+    cereal::JSONOutputArchive archive(outputStream);
+    archive(data);
+  }
+}
+
+template<class T>
+T getDataFromFile(const std::string &fileName, int flag = 0) {
+  T data;
+  std::ifstream outputStream(fileName);
+  if(flag == 0) {
+    cereal::PortableBinaryInputArchive archive(outputStream);
+    archive(data);
+  } else if(flag == 1) {
+    cereal::JSONInputArchive archive(outputStream);
+    archive(data);
+  }
+  return data;
+}
+ */

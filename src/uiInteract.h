@@ -17,7 +17,12 @@
 #ifndef UI_INTERFACE_H
 #define UI_INTERFACE_H
 
- #include "point.h"
+#include <iostream>
+
+// #define GLUT_CURSOR_NONE 0x0065
+// #define GLUT_CURSOR_RIGHT_ARROW 0x0000
+
+void setMouse(bool hidden);
 
 /********************************************
  * INTERFACE
@@ -28,11 +33,16 @@ class Interface{
 public:
    // Default constructor useful for setting up the random variables
    // or for opening the file for output
-   Interface() { initialize(0, 0x0000, "Window", Point(-50, 50), Point(50, -50)); };
+   Interface() { 
+    //    std::pair<int, int> tmp1(-50, 50);
+    //    std::pair<int, int> tmp2(50, -50);
+    //    initialize(0, 0x0000, "Window", tmp1, tmp2); 
+       initialize(0, 0x0000, "Window", std::pair<int, int>(-50, 50), std::pair<int, int>(50, -50)); 
+    };
 
    // Constructor if you want to set up the window with anything but
    // the default parameters
-   Interface(int argc, char ** argv, const char * title, Point topLeft, Point bottomRight){
+   Interface(int argc, char ** argv, const char * title, std::pair<int, int> topLeft, std::pair<int, int> bottomRight){
       initialize(argc, argv, title, topLeft, bottomRight);
    }
    
@@ -58,9 +68,14 @@ public:
    // should be the only onces to call this
    void keyEvent(int key, bool fDown);
    void keyEvent();
+   void modKeyEvent(int key, bool fDown);
+   void modKeyEvent();
 
    // Current frame rate
-   double frameRate() const { return timePeriod;   };
+   double frameRate() const { return timePeriod; };
+
+   void hideCursor() const { setMouse(true);  };
+   void showCursor() const { setMouse(false); };
    
    // Get various key events
    int  isDown()        const { return isDownPress;  };
@@ -75,14 +90,32 @@ public:
    bool isMouseMoved()  const { return isMouseMoving;};
    bool isBigX()        const { return isBigXPress;  };
    bool isEnter()       const { return isEnterPress; };
+   bool isBigQ()        const { return isBigQPress;  };
+   bool isM()           const { return isMPress;     };
+   bool isSlash()       const { return isSlashPress; };
+   bool isQuestion()    const { return isQuestionPress; };
+   bool isBigS()        const { return isBigSPress;  };
+   bool isS()           const { return isSPress;     };
+   bool isF5()          const { return isF5Press;    };
+   bool isF9()          const { return isF9Press;    };
+   bool isCtrl()        const { return isCtrlPress;  };
+   bool isAlt()         const { return isAltPress;   };
+   bool isShift()       const { return isShiftPress; };
+   bool isZ()           const { return isZPress;     };
+   
+   /*
+   bool is()           const { return isPress;    };
+   */
     // add key here
+    
    void setMouseLoc(int x, int y){ 
       mouseLoc.first  = x;
       mouseLoc.second = y;
    }
+
    std::pair<int, int> getMouseLoc() const {
-      return mouseLoc;
-      std::cout << "Returning " << mouseLoc.first << ", " << mouseLoc.second << std::endl;
+    // std::cout << "The mouse is at " << mouseLoc.first << ", " << mouseLoc.second << std::endl;
+    return mouseLoc;
    };
   
    
@@ -91,7 +124,7 @@ public:
    
 
 private:
-   void initialize(int argc, char ** argv, const char * title, Point topLeft, Point bottomRight);
+   void initialize(int argc, char ** argv, const char * title, std::pair<int, int> topLeft, std::pair<int, int> bottomRight);
 
    static bool         initialized;  // only run the constructor once!
    static double       timePeriod;   // interval between frame draws
@@ -109,11 +142,27 @@ private:
    static bool isMouseMoving;        // is the cursor moving right now?
    static bool isBigXPress;          //    "   X          "
    static bool isEnterPress;         // is enter pressed?
+   static bool isBigQPress;
+   static bool isMPress;
+   static bool isSlashPress;
+   static bool isQuestionPress;
+   static bool isBigSPress;
+   static bool isSPress;
+   static bool isF5Press;
+   static bool isF9Press;
+   static bool isCtrlPress;
+   static bool isAltPress;
+   static bool isShiftPress;
+   static bool isZPress;
+
+   /*
+   static bool isPress;
+   */
    static std::pair<int, int> mouseLoc;
+
+   
    // add key here
 };
-
-
 
 /************************************************************************
  * DRAW CALLBACK
