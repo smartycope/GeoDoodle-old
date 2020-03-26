@@ -1,44 +1,43 @@
 #include "game.h"
-//#include "uiDraw.h"
-//#include "uiInteract.h"
-//#include "line.h"
 #include <cassert>
 #include <iostream>
 #include <algorithm>
 #include <math.h>
 
-#define OFF_SCREEN_BORDER_AMOUNT 10 // how far off screen stuff goes
+// #define OFF_SCREEN_BORDER_AMOUNT 10 // how far off screen stuff goes
 
-std::pair<int, int> center(0, 0);
-std::pair<int, int> Game::bottomRight;
-std::pair<int, int> Game::topLeft;
+// std::pair<int, int> Game::bottomRight;
+// std::pair<int, int> Game::topLeft;
 
-Game::Game(const std::pair<int, int> &tl, const std::pair<int, int> &br) :
-dots(Array(tl, br)) {
-	topLeft = tl;
-	bottomRight = br;
+Game::Game() : dots(Array()) {
+	topLeft.first  = -getWindowWidth() / 2;
+    topLeft.second =  getWindowHeight() / 2;
+	bottomRight.first  = getWindowWidth() / 2;
+    bottomRight.second = -getWindowHeight() / 2;
+
     isBigErase.push_back(-1);
+
+    settings = getSettings();
+
+    settings["dot spread"] = pixCount();
+    xAdjust = int((float)settings["dot spread"] / 3.0f) + 1;
+    yAdjust = int((float)settings["dot spread"] / 3.0f) + 9;
+
+    // dots.setFocus(std::pair<int, int>(int(settings["dot spread"]), int(settings["dot spread"])));
+    // dots.setFocus(std::pair<int, int>(100, 100));
+
+    
+    debugVar("dot spread", (int)settings["dot spread"]);
+    debugVar("xAdjust", xAdjust);
+    debugVar("yAdjust", yAdjust);
 }
 
-Game :: ~Game(){ }
-
-/**************************************************************************
- * GAME :: IS ON SCREEN
- * Determines if a given point is on the screen.
- **************************************************************************/
+// bet you can't guess what this does!
 bool Game::isOnScreen(const std::pair<int, int> &point){
-	return (point.first >= topLeft.first - OFF_SCREEN_BORDER_AMOUNT
-		 && point.first <= bottomRight.first + OFF_SCREEN_BORDER_AMOUNT
-		 && point.second >= bottomRight.second - OFF_SCREEN_BORDER_AMOUNT
-		 && point.second <= topLeft.second + OFF_SCREEN_BORDER_AMOUNT);
-}
-
-bool Game::isCloseEnough(int from, int to, int tolerance){
-    if( (from < (to + tolerance)) and
-        (from > (to - tolerance)) )
-            return true;
-    else
-        return false;       
+	return (point.first >= topLeft.first - (int)settings["off screen amount"]
+		 && point.first <= bottomRight.first + (int)settings["off screen amount"]
+		 && point.second >= bottomRight.second - (int)settings["off screen amount"]
+		 && point.second <= topLeft.second + (int)settings["off screen amount"]);
 }
 
 void Game::repeatLine(){
@@ -75,15 +74,15 @@ void Game::repeatLine(){
                 eraseCount = 0;
 
                 // iterate through the array by the offset and create new points at every junction
-                for (int ys = yOffset - topLeft.second - OFF_SCREEN_AMOUNT - height;
-                        ys <= topLeft.second + yOffset + OFF_SCREEN_AMOUNT + height + 1;
-                        ys += height){
-                    for (int xs = xOffset - bottomRight.first - OFF_SCREEN_AMOUNT - width;
-                                xs <= bottomRight.first + xOffset + OFF_SCREEN_AMOUNT + width + 1;
-                                xs += width){                                
+                for (int ys =  yOffset - (getWindowHeight() / 2) - (int)settings["offscreen amount"] - height;
+                         ys <= yOffset + (getWindowHeight() / 2) + (int)settings["offscreen amount"] + height;
+                         ys += height){
+                    for (int xs =  xOffset - (getWindowWidth() / 2) - (int)settings["offscreen amount"] - width;
+                             xs <= xOffset + (getWindowWidth() / 2) + (int)settings["offscreen amount"] + width;
+                             xs += width){                                
 
-                        std::pair<int, int> startPoint(xs + X_ADJUST + 2, ys + Y_ADJUST + 2);
-                        std::pair<int, int> endPoint(xs + xEndOffset + X_ADJUST + 2, ys + yEndOffset + Y_ADJUST + 2);
+                        std::pair<int, int> startPoint(xs + xAdjust + 2, ys + yAdjust + 2);
+                        std::pair<int, int> endPoint(xs + xEndOffset + xAdjust + 2, ys + yEndOffset + yAdjust + 2);
                         Line tmp2(startPoint, endPoint);
                         newPattern.push_back(tmp2);
                         ++eraseCount;
@@ -120,13 +119,14 @@ void Game::repeatLine(){
                 int width  = metaLines.front().end.first - metaLines.front().start.first;
 
                 // iterate through the array by the offset and create new points at every junction
-                for (int ys = yOffset - topLeft.second - OFF_SCREEN_AMOUNT - height;
-                        ys <= topLeft.second + yOffset + OFF_SCREEN_AMOUNT + height + 1;
-                        ys += height){
-                    for (int xs = xOffset - bottomRight.first - OFF_SCREEN_AMOUNT - width;
-                                xs <= bottomRight.first + xOffset + OFF_SCREEN_AMOUNT + width + 1;
-                                xs += width){
-                        std::pair<int, int> startPoint(xs + X_ADJUST + 2, ys + Y_ADJUST + 2);
+                for (int ys =  yOffset - (getWindowHeight() / 2) - (int)settings["offscreen amount"] - height;
+                         ys <= yOffset + (getWindowHeight() / 2) + (int)settings["offscreen amount"] + height;
+                         ys += height){
+                    for (int xs =  xOffset - (getWindowWidth() / 2) - (int)settings["offscreen amount"] - width;
+                             xs <= xOffset + (getWindowWidth() / 2) + (int)settings["offscreen amount"] + width;
+                             xs += width){
+
+                        std::pair<int, int> startPoint(xs + xAdjust + repeatedxAdjust, ys + yAdjust + repeatedyAdjust);
                         Line tmp3(startPoint);
                         tmpLines.push_back(tmp3);
                     }
@@ -140,164 +140,3 @@ void Game::repeatLine(){
         }
     }
 }
-
-
-
-/* 
-void Game::drawBorderPoints(){
-    if (not borderIndexes.empty()){
-		// assert(false);
-		// std::cout << "Drawing points\n";
-        for(int i = 0; i <= borderIndexes.size(); i++){
-            drawRect(dots.array[borderIndexes[i].first][borderIndexes[i].second], 6, 6, 45);
-        }
-    }
-} */
-
-// My hacked functions of Brigham's that use message pack
-// template<class Stored>
-/* std::string Game::serialize(Stored content) {
-  std::ostringstream os(std::ios::binary);
-  msgpack::pack(os, src);
-  return os.str();
-} */
-
-// template<class Stored1>
-/* Stored1 Game::deserialize(const std::string &str) {
-  std::ostringstream os;
-  Stored1 structure;
-
-  msgpack::object_handle oh = msgpack::unpack(str.data(), str.size());
-
-    // deserialized object is valid during the msgpack::object_handle instance is alive.
-  msgpack::object deserialized = oh.get();
-  deserialized.convert(structure);  
-
-//   std::istringstream SData(data, std::ios::binary);
-//   cereal::PortableBinaryInputArchive Archive(SData);
-//   Archive(structure);
-  return deserialized; // if this doesn't work, maybe make this return structure?
-} */
-/* 
-// template<class T>
-void Game::saveDataToFile(T data, std::string fileName) {
-//   std::ofstream os(fileName);
-//   msgpack::pack(os, src);
-    std::ofstream fout(fileName);
-    nlohmann::json jsn(data);
-    std::fout << jsn;
-    fout.close();
-}
-
-// template<class T1>
-T1 Game::getDataFromFile(const std::string &fileName) {
-  std::ifstream fin(fileName);
-  nlohmann::json jsn;
-  fin >> jsn;
-  return jsn.get<T1>();
-} */
-
-  /* T1 structure;
-  msgpack::object_handle oh = msgpack::unpack(str.data(), str.size());
-  msgpack::object deserialized = oh.get();
-  deserialized.convert(structure);
-  return deserialized; */
-// }
-
-
-
-// message pack API example
-/* int main(void)
-{
-    msgpack::type::tuple<int, bool, std::string> src(1, true, "example");
-
-    // serialize the object into the buffer.
-    // any classes that implements write(const char*,size_t) can be a buffer.
-    std::stringstream buffer;
-    msgpack::pack(buffer, src);
-
-    // send the buffer ...
-    buffer.seekg(0);
-
-    // deserialize the buffer into msgpack::object instance.
-    std::string str(buffer.str());
-
-    msgpack::object_handle oh =
-        msgpack::unpack(str.data(), str.size());
-
-    // deserialized object is valid during the msgpack::object_handle instance is alive.
-    msgpack::object deserialized = oh.get();
-
-    // msgpack::object supports ostream.
-    std::cout << deserialized << std::endl;
-
-    // convert msgpack::object instance into the original type.
-    // if the type is mismatched, it throws msgpack::type_error exception.
-    msgpack::type::tuple<int, bool, std::string> dst;
-    deserialized.convert(dst);
-
-    // or create the new instance
-    msgpack::type::tuple<int, bool, std::string> dst2 =
-        deserialized.as<msgpack::type::tuple<int, bool, std::string> >();
-
-    return 0;
-} */
-
-
-
-// Brigham's functions for serialization
-/* template<class Stored>
-std::string serialize(Stored content, int flag = 0) {
-  std::ostringstream os(std::ios::binary);
-  if(flag == 0) {
-    cereal::PortableBinaryOutputArchive ar(os);
-    ar(content);
-  } else {
-    cereal::JSONOutputArchive ar(os);
-    ar(content);
-  }
-  return os.str();
-}
-
-template<class Stored>
-Stored deserialize(const std::string &data, int flag = 0) {
-  std::ostringstream os;
-  Stored structure;
-  if(flag == 0) {
-    std::istringstream SData(data, std::ios::binary);
-    cereal::PortableBinaryInputArchive Archive(SData);
-    Archive(structure);
-  } else {
-    std::istringstream SData(data);
-    cereal::JSONInputArchive Archive(SData);
-    Archive(structure);
-  }
-  return structure;
-}
-
-template<class T>
-void saveDataToFile(T data, std::string fileName, int flag = 0) {
-  std::ofstream outputStream(fileName);
-  if(flag == 0) {
-    cereal::PortableBinaryOutputArchive archive(outputStream);
-    archive(data);
-  } else if(flag == 1) {
-    cereal::JSONOutputArchive archive(outputStream);
-    archive(data);
-  }
-}
-
-template<class T>
-T getDataFromFile(const std::string &fileName, int flag = 0) {
-  T data;
-  std::ifstream outputStream(fileName);
-  if(flag == 0) {
-    cereal::PortableBinaryInputArchive archive(outputStream);
-    archive(data);
-  } else if(flag == 1) {
-    cereal::JSONInputArchive archive(outputStream);
-    archive(data);
-  }
-  return data;
-}
- */

@@ -68,82 +68,6 @@ const char NUMBER_OUTLINES[10][20] =
   {0, 0,  7, 0,   7, 0,  7,10,   0, 0,  0, 5,   0, 5,  7, 5,  -1,-1, -1,-1} //9
 };
 
-/************************************************************************
- * DRAW DIGIT
- * Draw a single digit in the old school line drawing style.  The
- * size of the glyph is 8x11 or x+(0..7), y+(0..10)
- *   INPUT  topLeft   The top left corner of the character
- *          digit     The digit we are rendering: '0' .. '9'
- *************************************************************************//* 
-void drawDigit(const Point & topLeft, char digit)
-{
-   // we better be only drawing digits
-   assert(isdigit(digit));
-   if (!isdigit(digit))
-      return;
-
-   // compute the row as specified by the digit
-   int r = digit - '0';
-   assert(r >= 0 && r <= 9);
-
-   // go through each segment.
-   for (int c = 0; c < 20 && NUMBER_OUTLINES[r][c] != -1; c += 4)
-   {
-      assert(NUMBER_OUTLINES[r][c    ] != -1 &&
-             NUMBER_OUTLINES[r][c + 1] != -1 &&
-             NUMBER_OUTLINES[r][c + 2] != -1 &&
-             NUMBER_OUTLINES[r][c + 3] != -1);
-
-      //Draw a line based off of the num structure for each number
-      Point start;
-      start.setX(topLeft.getX() + NUMBER_OUTLINES[r][c]);
-      start.setY(topLeft.getY() - NUMBER_OUTLINES[r][c + 1]);
-      Point end;
-      end.setX(topLeft.getX() + NUMBER_OUTLINES[r][c + 2]);
-      end.setY(topLeft.getY() - NUMBER_OUTLINES[r][c + 3]);
-         
-      drawLine(start, end);
-   }
-} */
-
-/*************************************************************************
- * DRAW NUMBER
- * Display an integer on the screen using the 7-segment method
- *   INPUT  topLeft   The top left corner of the character
- *          digit     The digit we are rendering: '0' .. '9'
- *************************************************************************
-
-void drawNumber(const std::pair<int, int> &topLeft, int number) {
-   // our cursor, if you will. It will advance as we output digits
-   Point point = topLeft;
-   
-   // is this negative
-   bool isNegative = (number < 0);
-   number *= (isNegative ? -1 : 1);
-   
-   // render the number as text
-   ostringstream sout;
-   sout << number;
-   string text = sout.str();
-
-   // handle the negative
-   if (isNegative){
-      glBegin(GL_LINES);
-      glVertex2f(point.getX() + 1, point.getY() - 5);
-      glVertex2f(point.getX() + 5, point.getY() - 5);
-      glEnd();
-      point.addX(11);
-   }
-   
-   // walk through the text one digit at a time
-   for (const char *p = text.c_str(); *p; p++){
-      assert(isdigit(*p));
-      drawDigit(point, *p);
-      point.addX(11);
-   }
-}
-*/
-
 /*************************************************************************
  * DRAW TEXT
  * Draw text using a simple bitmap font
@@ -191,7 +115,6 @@ void drawPolygon(const std::pair<int, int> &center, int radius, int points, int 
 
    // complete drawing
    glEnd();
-
 }
 */
 

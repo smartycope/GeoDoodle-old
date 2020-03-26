@@ -32,6 +32,7 @@ src/array.cpp
 src/line.h
 src/gameAdvance.cpp
 src/gameHandleInput.cpp
+src/glutCallbacks.cpp
 )
 
 # Find dependencies

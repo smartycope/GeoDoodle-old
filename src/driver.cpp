@@ -24,11 +24,13 @@
  * allow screen resizing
  * add mirroring
 :) add instant repeating inside of the metabox (toggles with m)
+ * add the ability to change how much space is between the dots
  ******************************************************/
 #include "game.h"
 #include "uiInteract.h"
 #include "uiDraw.h"
 #include <iostream>
+#include "glutCallbacks.h"
 
 /*************************************
  * All the interesting work happens here, when
@@ -39,14 +41,9 @@
  **************************************/
 void callBack(const Interface *pUI, void *p){
    Game *pGame = (Game *)p;
-
-//    std::cout << "Called back\n";
    
    pGame->advance();
-//    std::cout << "Advancing...\n";
    pGame->handleInput(*pUI);
-//    std::cout << "Handling...\n";
-   //pGame->draw(*pUI);
 }
 
 /*********************************
@@ -57,9 +54,23 @@ void callBack(const Interface *pUI, void *p){
 int main(int argc, char ** argv){
    std::pair<int, int> topLeft(-200, 200);
    std::pair<int, int> bottomRight(200, -200);
+
+   // default settings
+//    nlohmann::json j;
+//    j.emplace("dot spread", 16);
+//    j.emplace("start height", 400);
+//    j.emplace("start width", 400);
+//    j.emplace("is c repeat", true);
+//    j.emplace("number of enters", 4);
+//    j.emplace("key repeat speed", 9);
+//    j.emplace("offscreen amount", 10);
+//    j.emplace("focus radius", 5);
+//    setSettings(j);
+//    j.emplace("", );
+
    
-   Interface ui(argc, argv, "GeoDoodle", topLeft, bottomRight);
-   Game game(topLeft, bottomRight);
+   Interface ui(argc, argv, "GeoDoodle");
+   Game game;
    ui.run(callBack, &game);
    
    return 0;

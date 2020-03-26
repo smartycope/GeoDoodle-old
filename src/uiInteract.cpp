@@ -20,20 +20,20 @@
 #include <iostream>
 
 #ifdef __APPLE__
-#include <openGL/gl.h>    // Main OpenGL library
-#include <GLUT/glut.h>    // Second OpenGL library
+#include <openGL/gl.h> // Main OpenGL library
+#include <GLUT/glut.h> // Second OpenGL library
 #endif // __APPLE__
 
 #ifdef __linux__
-#include <GL/gl.h>    // Main OpenGL library
-#include <GL/glut.h>  // Second OpenGL library
+#include <GL/gl.h>     // Main OpenGL library
+#include <GL/glut.h>   // Second OpenGL library
 #endif // __linux__
 
 #ifdef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
-#include <GL/glut.h>           // OpenGL library we copied
-#include <ctime>            // for ::Sleep();
+#include <GL/glut.h>   // OpenGL library we copied
+#include <ctime>       // for ::Sleep();
 #include <windows.h>
 
 #define _USE_MATH_DEFINES
@@ -42,152 +42,10 @@
 
 #include "uiInteract.h"
 
-using namespace std;
+// using namespace std;
 
-#define BACKGROUND_COLOR 1, 1, 1, 0
 #define MOUSE_MOVES 193 // litterally just any random number you think isn't being used by GLUT already
-
-//static std::pair<int, int> mouseLoc;
-
-/*********************************************************************
- * SLEEP
- * Pause for a while.  We want to put the program to sleep until it
- * is time to draw again.  Note that this requires us to tell the OS
- * that we are idle.  the nanosleep function performs this task for us
- *   INPUT: msSleep: sleep time in milliseconds
- *********************************************************************/
-void sleep(unsigned long msSleep) {
-   // Windows handles sleep one way
-#ifdef _WIN32
-   ::Sleep(msSleep + 35);
-
-   // Unix-based operating systems (OS-X, Linux) do it another
-#else // LINUX, XCODE
-   timespec req = {};
-   time_t sec = (int)(msSleep / 1000);
-   msSleep -= (sec * 1000);
-
-   req.tv_sec = sec;
-   req.tv_nsec = msSleep * 1000000L;
-
-   while (nanosleep(&req, &req) == -1)
-      ;
-#endif // LINUX, XCODE
-   return;
-}
-
-/************************************************************************
- * DRAW CALLBACK
- * This is the main callback from OpenGL. It gets called constantly by
- * the graphics engine to refresh and draw the window.  Here we will
- * clear the background buffer, draw on it, and send it to the forefront
- * when the appropriate time period has passsed.
- *
- * Note: This and all other callbacks can't be member functions, they must
- * have global scope for OpenGL to see them.
- *************************************************************************/
-void drawCallback(){
-   // even though this is a local variable, all the members are static
-//    std::cout << "Drawing...\n";
-   Interface ui;
-   // Prepare the background buffer for drawing
-   glClear(GL_COLOR_BUFFER_BIT); //clear the screen
-   glColor3f(0,0,0);
-   
-   //calls the client's display function
-   assert(ui.callBack != NULL);
-   ui.callBack(&ui, ui.p);
-   
-   //loop until the timer runs out
-   if (!ui.isTimeToDraw())
-      sleep((unsigned long)((ui.getNextTick() - clock()) / 1000));
-
-   // from this point, set the next draw time
-   ui.setNextDrawTime();
-
-   // bring forth the background buffer
-   glutSwapBuffers();
-
-   // clear the space at the end
-   ui.keyEvent();
-
-   ui.modKeyEvent();
-}
-
-/************************************************************************
- * KEY DOWN CALLBACK
- * When a key on the keyboard has been pressed, we need to pass that
- * on to the client.  Currently, we are only registering the arrow keys
- *   INPUT   key:   the key we pressed according to the GLUT_KEY_ prefix
- *           x y:   the position in the window, which we ignore
- *************************************************************************/
-void keyDownCallback(int key, int x, int y){
-   // Even though this is a local variable, all the members are static
-   // so we are actually getting the same version as in the constructor.
-   //std::cout << "Key Down Callback x = " << x << ", y = " << y << endl;
-   Interface ui;
-   ui.keyEvent(key, true /*fDown*/);
-   ui.modKeyEvent(glutGetModifiers(), true);
-}
-
-/************************************************************************
- * KEY UP CALLBACK
- * When the user has released the key, we need to reset the pressed flag
- *   INPUT   key:   the key we pressed according to the GLUT_KEY_ prefix
- *           x y:   the position in the window, which we ignore
- *************************************************************************/
-void keyUpCallback(int key, int x, int y){
-   // Even though this is a local variable, all the members are static
-   // so we are actually getting the same version as in the constructor.
-   //std::cout << "Key up Callback x = " << x << ", y = " << y << endl;
-   Interface ui;
-   ui.keyEvent(key, false /*fDown*/);
-   ui.modKeyEvent(glutGetModifiers(), false);
-}
-
-/***************************************************************
- * KEYBOARD CALLBACK
- * Generic callback to a regular ascii keyboard event, such as
- * the space bar or the letter 'q'
- ***************************************************************/
-void keyboardCallback(unsigned char key, int x, int y){
-   // Even though this is a local variable, all the members are static
-   // so we are actually getting the same version as in the constructor.
-   //std::cout << "Keyboard Callback x = " << x << ", y = " << y << endl;
-   Interface ui;
-   ui.keyEvent(key, true /*fDown*/);
-   ui.modKeyEvent(glutGetModifiers(), true);
-   /* ui.mouseLoc.first  = x;
-   ui.mouseLoc.second = y; */
-}
-
-void mouseCallback(int button, int state, int x, int y){
-   if(state == GLUT_DOWN){
-      Interface ui;
-      ui.keyEvent(button, true /*fDown */);
-      // the 200 is because this reads from the top left corner, but uiDraw.cpp writes from the center (i.e. where (0, 0) is)
-      ui.setMouseLoc(x - 200, -(y - 200)); // update this to use topLeft and bottomRight isntead
-   }
-   //std::cout << "Mouse Callback has been initiated! Its x = " << x << ", and its y = " << y << std::endl;
-}
-/* 
-int glutGetModifiers(){
-    Interface ui;
-    ui.keyEvent()
-    std::cout << "Will I ever get called?\n";
-    // return GLUT_ACTIVE_CTRL;
-} */
-
-void mouseMotionCallback(int x, int y){
-   Interface ui;
-   ui.keyEvent(MOUSE_MOVES, true);
-   // the 100 is because this reads from the top left corner, but uiDraw.cpp writes from the center (i.e. where (0, 0) is)
-   ui.setMouseLoc(x - 200, -(y - 200));
-}
-
-void setMouse(bool hidden){
-    glutSetCursor((hidden ? 0x0065 : 0x0000));
-}
+#define BACKGROUND_COLOR 1, 1, 1, 0
 
 /***************************************************************
  * INTERFACE : KEY EVENT
@@ -326,10 +184,10 @@ void Interface::keyEvent(){
    isBigSPress = false;
    isF5Press   = false;
    isF9Press   = false;
-   isCtrlPress = false;
+//    isCtrlPress = false;
 //    isAltPress = false;
 //    isShiftPress = false;
-//    isZPress = false;
+   isZPress = false;
 
    /*
    isPress = false;
@@ -368,7 +226,7 @@ void Interface::setFramesPerSecond(double value){
 
 /***************************************************
  * STATICS
- * All the static member variables need to be initialized
+ * All the static member variables need to be initializedwhite
  * Somewhere globally.  This is a good spot
  **************************************************/
 int          Interface::isDownPress  = 0;
@@ -380,10 +238,10 @@ bool         Interface::isCPress     = false;
 bool         Interface::isXPress     = false;
 bool         Interface::isMouseClick = false;
 bool         Interface::isMouseRightClick = false;
-std::pair<int, int> Interface::mouseLoc(20, 20);
+std::pair<int, int> Interface::mouseLoc; // (/* getSettings()["dot spread"] */ -1, /* getSettings()["dot spread"] */ -8);
 bool         Interface::isMouseMoving = false;
 bool         Interface::isBigXPress  = false;
-bool         Interface::isEnterPress = false; 
+bool         Interface::isEnterPress = false;
 bool         Interface::isBigQPress  = false;
 bool         Interface::isMPress     = false;
 bool         Interface::isSlashPress = false;
@@ -408,8 +266,6 @@ unsigned int Interface::nextTick     = 0;        // redraw now please
 void *       Interface::p            = NULL;
 void (*Interface::callBack)(const Interface *, void *) = NULL;
 
-Interface::~Interface(){ }
-
 /************************************************************************
  * INTEFACE : INITIALIZE
  * Initialize our drawing window.  This will set the size and position,
@@ -419,7 +275,7 @@ Interface::~Interface(){ }
  *           argv:       The actual command-line parameters
  *           title:      The text for the titlebar of the window
  *************************************************************************/
-void Interface::initialize(int argc, char ** argv, const char * title, std::pair<int, int> topLeft, std::pair<int, int> bottomRight){
+void Interface::initialize(int argc, char ** argv, const char * title){
    if (initialized)
       return;
    
@@ -429,36 +285,34 @@ void Interface::initialize(int argc, char ** argv, const char * title, std::pair
    // create the window
    glutInit(&argc, argv);
    std::pair<int, int> point;
-   glutInitWindowSize(   // size of the window
-      (bottomRight.first - topLeft.first),
-      (topLeft.second - bottomRight.second));
+//    glutInitWindowSize(   // size of the window
+//       (bottomRight.first - topLeft.first),
+//       (topLeft.second - bottomRight.second));
             
-   glutInitWindowPosition(10, 10);                // initial position 
+   glutInitWindowPosition(100, 100);                // initial position
    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);  // double buffering
    glutCreateWindow(title);              // text on titlebar
-   glutIgnoreKeyRepeat(true); // previously true
+   glutIgnoreKeyRepeat(false); // previously true
    
    // set up the drawing style: B/W and 2D
-   glClearColor(BACKGROUND_COLOR);          // Black is the background color
-   gluOrtho2D(topLeft.first, bottomRight.first,
-              bottomRight.second, topLeft.second); // 2D environment
+   glClearColor(BACKGROUND_COLOR);          // set the background color
+//    gluOrtho2D(topLeft.first, bottomRight.first,
+            //   bottomRight.second, topLeft.second); // 2D environment
+    gluOrtho2D(-START_WIDTH / 2, START_WIDTH / 2, -START_HEIGHT / 2, START_HEIGHT / 2);
 
-   // register the callbacks so OpenGL knows how to call us
-   glutDisplayFunc(   drawCallback    );
-   glutIdleFunc(      drawCallback    );
-   glutKeyboardFunc(  keyboardCallback);
-   glutSpecialFunc(   keyDownCallback );
-   glutSpecialUpFunc( keyUpCallback   );
-   glutMouseFunc(     mouseCallback   );
-   glutPassiveMotionFunc( mouseMotionCallback );
+    glutReshapeWindow(START_WIDTH, START_HEIGHT);
 
-   /* mouseLoc.first  = 20; 
-   mouseLoc.second = 20; */
+    // register the callbacks so OpenGL knows how to call us
+    glutDisplayFunc(   drawCallback    );
+    glutIdleFunc(      drawCallback    );
+    glutKeyboardFunc(  keyboardCallback);
+    glutSpecialFunc(   keyDownCallback );
+    glutSpecialUpFunc( keyUpCallback   );
+    glutMouseFunc(     mouseCallback   );
+    glutPassiveMotionFunc( mouseMotionCallback );
 
-   initialized = true;
-   
-   // done
-   return;
+    initialized = true;
+    return;
 }
 
 /************************************************************************
@@ -476,8 +330,6 @@ void Interface::run(void (*callBack)(const Interface *, void *), void *p) {
    // setup the callbacks
    this->p = p;
    this->callBack = callBack;
-
-//    std::cout << "Running...\n";
    
    glutMainLoop();
 

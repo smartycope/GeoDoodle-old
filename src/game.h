@@ -5,23 +5,27 @@
 #include <vector>
 #include <utility>
 #include <map>
-// #include <msgpack.hpp>
-// #include "array.h"
 #include "line.h"
+#include "glutCallbacks.h"
 
-#define KEY_REPEAT_DELAY 9
-#define OFF_SCREEN_AMOUNT 10
+// #define KEY_REPEAT_DELAY 9 // in settings
+// #define OFF_SCREEN_AMOUNT 10 // in settings
 // These are to make the lines line up with the dots better. Honestly not sure why they're nessicary.
-#define X_ADJUST -7 // 15 = -4
-#define Y_ADJUST 3 // 15 = 1
+// #define X_ADJUST 0 // 16 = -7 // 15 = -4
+// #define Y_ADJUST 0 // 16 = 3  // 15 = 1
 
-#define DEBUG false
+// #define DEBUG true
 
 class Game{
 private:
 	Array dots;
+    nlohmann::json settings;
 
-	// unsigned int timedFade = 0;
+    int xAdjust;
+    int yAdjust;
+    int repeatedxAdjust = 2;
+    int repeatedyAdjust = 2;
+
 	unsigned int allowUp    = 1;
 	unsigned int allowDown  = 1;
 	unsigned int allowLeft  = 1;
@@ -34,34 +38,30 @@ private:
     bool notOnDotUp         = false;
     bool notOnDotSide       = false;
     bool lineCatch          = false;
-    // bool lastRepeatedCount  = false; // this is how many lines it has been since you added a 
+    unsigned int checkSettingsDelay = 0;
+    // this keeps track of how many lines you've added since a repeating line
     std::vector<int> isBigErase;
+    // this dictates how many times you need to erase to erase a repeated line
     unsigned int eraseCount = 0;
+    // this holds all the unfinished repeating lines.
     std::vector<Line> tmpLines;
 
     void repeatLine();
 
-    bool isCloseEnough(int from, int to, int tolerance);
+    std::pair<int, int> topLeft;
+	std::pair<int, int> bottomRight;
 
 public:
-	Game(const std::pair<int, int> &tl, const std::pair<int, int> &br);
-	~Game();
-
-	/*********************************************
-	 * Handles all of the mouse movements and keystrokes
-	 *********************************************/
+	Game();
+    ~Game(){ };
+    // guess what these do.
 	void handleInput(const Interface& ui);
-
-	/*********************************************
-	 * The main loop of the program
-	 *********************************************/
 	void advance();
 	
-	static bool isOnScreen(const std::pair<int, int> &point);
-	void drawBorderPoints();
+	bool isOnScreen(const std::pair<int, int> &point); // consider moving this to glutCallbacks.cpp
 	
-	static std::pair<int, int> topLeft;
-	static std::pair<int, int> bottomRight;
+	// static std::pair<int, int> topLeft;
+	// static std::pair<int, int> bottomRight;
 
 	std::vector<Line> pattern;
 	std::vector<int> boundsX;
