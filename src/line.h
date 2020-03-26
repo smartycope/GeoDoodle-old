@@ -4,9 +4,8 @@
 #include "array.h"
 #include "uiDraw.h"
 
-class Line:public Array{
+class Line{
 public:
-    // std::pair<std::pair<int, int>, std::pair<int, int>> indexes;
     std::pair<int, int> start;
     std::pair<int, int> end;
     bool isFinished;

@@ -1,7 +1,8 @@
 #include "game.h"
 #include <iostream>
 
-#define RADIUS 5	    // radius of the focus circle
+// #define RADIUS 5	    // radius of the focus circle - in settings
+#define CHECK_SETTINGS_DELAY 50 // how often you should compare the settings file to see if it's changed
 #define START_Y 100     // where should the text start 
 #define START_X -150
 #define LINE_OFFSET -25 // how much should each line be offset
@@ -20,8 +21,7 @@
 void Game::advance(){
 	if (!drawMenu){
         dots.drawArray();
-        dots.drawFocus(RADIUS);
-        // std::cout << "The focus is at " << dots.getFocus().first << ", " << dots.getFocus().second << std::endl;
+        dots.drawFocus(settings["focus radius"]);
 
         // draw all the lines - change this to use an iterator
         for (int i = 0; i < pattern.size(); i++){
@@ -49,11 +49,27 @@ void Game::advance(){
                 int xEndOffset = dots.getFocus().first  - pattern.back().start.first;
                 int yEndOffset = dots.getFocus().second - pattern.back().start.second;
 
-                std::pair<int, int> endPoint(xEndOffset /* + X_ADJUST + 2 */ + (*it).start.first, yEndOffset/*  + Y_ADJUST + 2 */ + (*it).start.second);
+                std::pair<int, int> endPoint(xEndOffset + (*it).start.first, yEndOffset + (*it).start.second);
                 (*it).finish(endPoint);
                 (*it).drawMyLine();
             }
         }
+
+        //check to see if the settings have changed. If so, update the settings variable
+        if (checkSettingsDelay > CHECK_SETTINGS_DELAY){
+            nlohmann::json j = getSettings();
+            if ((settings != j) or (dots.settings != j)) {
+                dots.settings = j;
+                settings = j;
+                checkSettingsDelay++;
+            }
+        }
+
+        // update the size of the window
+        topLeft.first  = -getWindowWidth() / 2;
+        topLeft.second =  getWindowHeight() / 2;
+	    bottomRight.first  = getWindowWidth() / 2;
+        bottomRight.second = -getWindowHeight() / 2;
 	}
     
 	// explination screen

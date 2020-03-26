@@ -2,67 +2,31 @@
 #include <utility>
 #include <vector>
 #include <math.h>
+#include <fstream>
+#include "glutCallbacks.h"
 
-#define BORDER_WIDTH 0 // how far away from the edge do the dots go
-#define DOT_SPREAD 16 // the distance between each dots - everything is easier if this is even.
-#define ARRAY_SIZE 28
+// #define DOT_SPREAD 16 // the distance between each dots - everything is easier if this is even.
 
 class Array{
 protected:
-    // std::pair<int, int> cursorLoc; // previously cursorIndexLoc
-    std::pair<int, int> focusLoc; // previously focusLoc
-    //int arraySize; // how many dots does one side of the array have in 
+    std::pair<int, int> focusLoc;
 
 public:
-    std::pair<int, int> topLeft;
-    std::pair<int, int> bottomRight;
-    int height;
-    int width;
-    int dotSpread;
-    // std::vector<std::vector<std::pair<int, int>>> array;
+    nlohmann::json settings;
     
-    // defualt constructor just so line will work
      Array(){
-        // arraySize = ARRAY_SIZE;
-        // array.resize(arraySize);
-        // for(auto it = array.begin(); it != array.end(); it++)
-        // (*it).resize(arraySize);
-        // generateArray();
-        // tl = 0;
-        // br = bottomRight;
-        // focusLoc.first = (topLeft.first - bottomRight.first) / 2;
-        // focusLoc.second = (topLeft.second - bottomRight.second) / 2;
-        dotSpread = DOT_SPREAD;
-        topLeft = {-200, 200};
-        bottomRight = {200, -200};
+        settings = getSettings();
+        settings["dot spread"] = pixCount();
+        // focusLoc.first = (int)settings["dot spread"];
+        // focusLoc.second = (int)settings["dot spread"];
+        // debugVar("dot spread", settings["dot spread"]);
     }
 
-    Array(std::pair<int, int> tl, std::pair<int, int> br){
-        dotSpread = DOT_SPREAD;
-        tl = topLeft;
-        br = bottomRight;
-        width = (topLeft.first - bottomRight.first);
-        height = (topLeft.second - bottomRight.second);
-        focusLoc.first = width / 2;
-        focusLoc.second = height / 2;
-    }
-    Array(std::pair<int, int> tl, std::pair<int, int> br, std::pair<int,int> focusedIndex){
-        // arraySize = ARRAY_SIZE;
-        // array.resize(arraySize);
-        // for(auto it = array.begin(); it != array.end(); it++)
-        //     (*it).resize(arraySize);
-        // generateArray();
-        dotSpread = DOT_SPREAD;
-        tl = topLeft;
-        br = bottomRight;
-        width = (topLeft.first - bottomRight.first);
-        height = (topLeft.second - bottomRight.second);
-        focusLoc.first = width / 2;
-        focusLoc.second = height / 2;
-        focusLoc= focusedIndex;
-    }
+    // Array(){
+    //     settings = getSettings();
+    //     settings["dot spread"] = pixCount();
+    // }
     
-    // void generateArray();
     void drawArray();
     void drawFocus(int radius);
     
@@ -102,29 +66,4 @@ public:
     int getFocusY(){
         return focusLoc.second;
     }
-    /*
-    void updateCursorLoc(){
-        // get mouse location here
-    } 
-    
-    std::pair<int, int> getCursorIndex(){
-        return cursorLoc;
-    }
-    std::pair<int, int> pointToIndex(Point hi){
-        std::pair<int, int> tmp;
-        tmp.first  = int(round(float(hi.getX()) / float(ARRAY_WIDTH)));
-        tmp.second = int(round(float(hi.getY()) / float(ARRAY_WIDTH)));
-        return tmp;
-    } */
-    // int getArraySize(){
-    //     return arraySize;
-    // }
-    // // don't use
-    // void setArraySize(const int &size){
-    //     arraySize = size;
-    // }
-
-    // Point operator [] (std::pair<int, int> index){
-    //     return array[index.first][index.second];
-    // }
 };

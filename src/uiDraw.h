@@ -1,9 +1,4 @@
 /***********************************************************************
- * Header File:
- *    User Interface Draw : put pixels on the screen
- * Author:
- *    Copeland Carter
- * Summary:
  *    This is the code necessary to draw on the screen. We have a collection
  *    of procedural functions here because each draw function does not
  *    retain state. In other words, they are verbs (functions), not nouns
@@ -15,20 +10,7 @@
 
 #include <string>     // To display text on the screen
 #include <cmath>      // for M_PI, sin() and cos()
-using std::string;
-
-/************************************************************************
- * DRAW DIGIT
- * Draw a single digit in the old school line drawing style.  The
- * size of the glyph is 8x11 or x+(0..7), y+(0..10)
- *************************************************************************/
-// void drawDigit(const std::pair<int, int> &topLeft, char digit);
-
-/*************************************************************************
- * DRAW NUMBER
- * Display an integer on the screen using the 7-segment method
- *************************************************************************/
-// void drawNumber(const std::pair<int, int> &topLeft, int number);
+// using std::string;
 
 /*************************************************************************
  * DRAW TEXT
@@ -78,8 +60,6 @@ void drawLine(const std::pair<int, int> &begin, const std::pair<int, int> &end,
  * Draw a single point on the screen, 2 pixels by 2 pixels
  *************************************************************************/
 void drawDot(const std::pair<int, int> &point);
-
-//void generateArray(int x, int y);
 
 /******************************************************************
  * RANDOM

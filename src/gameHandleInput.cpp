@@ -4,10 +4,8 @@
 #include <algorithm>
 #include <math.h>
 #include <string>
-// #include <sstream>
 #include <nlohmann/json.hpp>
 #include <fstream>
-// #include <msgpack.hpp>
 
 /* 
 *	Unitl I find some way in game to explain which keys do what...
@@ -35,19 +33,19 @@ void Game::handleInput(const Interface& ui){
 	if (ui.isLeft()){
         // Left arrow code
 		allowLeft++;
-		if (allowLeft > KEY_REPEAT_DELAY or allowLeft == 1) {
+		if (allowLeft > (int)settings["key repeat speed"] or allowLeft == 1) {
             int shift;
 
             if (ui.isShift()) {
-                shift = int((float)dots.dotSpread / 2.0f);
+                shift = int((float)settings["dot spread"] / 2.0f);
                 notOnDotSide = not notOnDotSide;
             }
             else if (notOnDotSide) {
-                shift = int((float)dots.dotSpread / 2.0f);
+                shift = int((float)settings["dot spread"] / 2.0f);
                 notOnDotSide = false;
             }
             else {
-                shift = dots.dotSpread;
+                shift = (int)settings["dot spread"];
             }
             
 			dots.setFocusX(dots.getFocusX() - shift);
@@ -62,20 +60,20 @@ void Game::handleInput(const Interface& ui){
 
 	if (ui.isRight()){
         // right arrow code
-		allowRight++;// tmp.first = int(round(float(ui.getMouseLoc().first) / float(dots.dotSpread)) * float(dots.dotSpread)) + X_ADJUST;
-		if (allowRight > KEY_REPEAT_DELAY or allowRight == 1){
+		allowRight++;// tmp.first = int(round(float(ui.getMouseLoc().first) / float(settings["dot spread"])) * float(settings["dot spread"])) + xAdjust;
+		if (allowRight > (int)settings["key repeat speed"] or allowRight == 1){
             int shift;
 
             if (ui.isShift()) {
-                shift = int((float)dots.dotSpread / 2.0f);
+                shift = int((float)settings["dot spread"] / 2.0f);
                 notOnDotSide = not notOnDotSide;
             }
             else if (notOnDotSide) {
-                shift = int((float)dots.dotSpread / 2.0f);
+                shift = int((float)settings["dot spread"] / 2.0f);
                 notOnDotSide = false;
             }
             else {
-                shift = dots.dotSpread;
+                shift = (int)settings["dot spread"];
             }
 			dots.setFocusX(dots.getFocusX() + shift);
 		}
@@ -90,19 +88,19 @@ void Game::handleInput(const Interface& ui){
 	if (ui.isUp()){
 		// up arrow code
 		allowUp++;
-		if (allowUp > KEY_REPEAT_DELAY or allowUp == 1){
+		if (allowUp > (int)settings["key repeat speed"] or allowUp == 1){
             int shift;
 
             if (ui.isShift()) {
-                shift = int((float)dots.dotSpread / 2.0f);
+                shift = int((float)settings["dot spread"] / 2.0f);
                 notOnDotUp = not notOnDotUp;
             }
             else if (notOnDotUp) {
-                shift = int((float)dots.dotSpread / 2.0f);
+                shift = int((float)settings["dot spread"] / 2.0f);
                 notOnDotUp = false;
             }
             else {
-                shift = dots.dotSpread;
+                shift = (int)settings["dot spread"];
             }
 			dots.setFocusY(dots.getFocusY() + shift);
 		}
@@ -117,19 +115,19 @@ void Game::handleInput(const Interface& ui){
 	if (ui.isDown()){
 		// down arrow code
 		allowDown++;
-		if (allowDown > KEY_REPEAT_DELAY or allowDown == 1){
+		if (allowDown > (int)settings["key repeat speed"] or allowDown == 1){
             int shift;
 
             if (ui.isShift()) {
-                shift = int((float)dots.dotSpread / 2.0f);
+                shift = int((float)settings["dot spread"] / 2.0f);
                 notOnDotUp = not notOnDotUp;
             }
             else if (notOnDotUp) {
-                shift = int((float)dots.dotSpread / 2.0f);
+                shift = int((float)settings["dot spread"] / 2.0f);
                 notOnDotUp = false;
             }
             else {
-                shift = dots.dotSpread;
+                shift = (int)settings["dot spread"];
             }
 			dots.setFocusY(dots.getFocusY() - shift);
 		}
@@ -162,7 +160,7 @@ void Game::handleInput(const Interface& ui){
 			Line s(dots.getFocus());
 			pattern.push_back(s);
             repeatLine();
-		} 
+		}
 		else{
 			pattern.back().finish(dots.getFocus());
             repeatLine();repeatLine();
@@ -205,12 +203,13 @@ void Game::handleInput(const Interface& ui){
 			Line p(dots.getFocus());
 			pattern.push_back(p);
             repeatLine();
-		} 
+		}
 		else{
 			pattern.back().finish(dots.getFocus());
             repeatLine();
 		}
-        if (DEBUG) { std::cout << dots.getFocusX() << ", " << dots.getFocusY() << std::endl; };
+        if (IS_DEBUG) { std::cout << dots.getFocusX() << ", " << dots.getFocusY() << std::endl; };
+        // debug();
 	}
 
 	if(ui.isMouseRightClicked()){
@@ -236,8 +235,11 @@ void Game::handleInput(const Interface& ui){
 		// Point curser(ui.getMouseLoc().first, ui.getMouseLoc().second);
         std::pair<int, int> tmp;//(ui.getMouseLoc());
 
-        tmp.first = int(round(float(ui.getMouseLoc().first) / float(dots.dotSpread)) * float(dots.dotSpread)) + X_ADJUST;
-        tmp.second = int(round(float(ui.getMouseLoc().second) / float(dots.dotSpread)) * float(dots.dotSpread)) + Y_ADJUST;
+        tmp.first  = int(floor( float(ui.getMouseLoc().first)  / float(settings["dot spread"]) ) * float(settings["dot spread"])) + xAdjust;
+        tmp.second = int(floor( float(ui.getMouseLoc().second) / float(settings["dot spread"]) ) * float(settings["dot spread"])) + yAdjust;
+
+        // tmp.first  = int(round( float(ui.getMouseLoc().first)  / float(settings["dot spread"]) ) * float(settings["dot spread"])) + xAdjust;
+        // tmp.second = int(round( float(ui.getMouseLoc().second) / float(settings["dot spread"]) ) * float(settings["dot spread"])) + yAdjust;
 
 		dots.setFocus(tmp);
 	}
@@ -280,20 +282,20 @@ void Game::handleInput(const Interface& ui){
                     int width1  = metaLines.front().end.first - metaLines.front().start.first;
                 
                     // get every point in the repeated pattern
-                    for (int ys = yOffset1 - topLeft.second - OFF_SCREEN_AMOUNT - height1;
-                            ys <= topLeft.second + yOffset1 + OFF_SCREEN_AMOUNT + height1 + 1;
+                    for (int ys = yOffset1 - topLeft.second - (int)settings["offscreen amount"] - height1;
+                            ys <= topLeft.second + yOffset1 + (int)settings["offscreen amount"] + height1 + 1;
                             ys += height1){
 
-                        for (int xs = xOffset1 - bottomRight.first - OFF_SCREEN_AMOUNT - width1;
-                                    xs <= bottomRight.first + xOffset1 + OFF_SCREEN_AMOUNT + width1 + 1;
+                        for (int xs = xOffset1 - bottomRight.first - (int)settings["offscreen amount"] - width1;
+                                    xs <= bottomRight.first + xOffset1 + (int)settings["offscreen amount"] + width1 + 1;
                                     xs += width1){
                                         
                             // reiterate through every point and compare against xs and ys
                             for (int k = 0; k < pattern.size(); k++){
-                                if((isCloseEnough(pattern[k].start.first, xs + X_ADJUST + 2, dots.dotSpread) and
-                                    isCloseEnough(pattern[k].start.second, ys + X_ADJUST + 2, dots.dotSpread)) or
-                                   (isCloseEnough(pattern[k].end.first, xs + X_ADJUST + 2, dots.dotSpread) and
-                                    isCloseEnough(pattern[k].end.second, ys + X_ADJUST + 2, dots.dotSpread)) ) {
+                                if((isCloseEnough(pattern[k].start.first, xs + xAdjust + 2, (int)settings["dot spread"]) and
+                                    isCloseEnough(pattern[k].start.second, ys + xAdjust + 2, (int)settings["dot spread"])) or
+                                   (isCloseEnough(pattern[k].end.first, xs + xAdjust + 2, (int)settings["dot spread"]) and
+                                    isCloseEnough(pattern[k].end.second, ys + xAdjust + 2, (int)settings["dot spread"])) ) {
                                     
                                     pattern.erase(pattern.begin() + k);
                                 }
@@ -406,7 +408,6 @@ void Game::handleInput(const Interface& ui){
         }
 
         ++numEnterPressed;
-        // std::cout << "num enter pressed: " << numEnterPressed << std::endl;
 
 		// if (boundsX.size() < 3){
         if (numEnterPressed < 4){
@@ -452,7 +453,7 @@ void Game::handleInput(const Interface& ui){
 
             std::vector<Line> newPattern;
             int width, height, xOffset, xEndOffset, yOffset, yEndOffset;
-            std::pair<int, int> topLeft1;
+            std::pair<int, int> topLeft1(-200, -200);
             bool first = true;
             std::pair<int, int> start;
 
@@ -491,37 +492,71 @@ void Game::handleInput(const Interface& ui){
                             //   << "\nxEndOffset = " << xEndOffset << "\nyEndOffset = " << yEndOffset << std::endl << std::endl;
 
                     // iterate through the array by the offset and create new points at every junction
-                    for (int ys = yOffset - topLeft.second - OFF_SCREEN_AMOUNT - height;
-                         ys <= topLeft.second + yOffset + OFF_SCREEN_AMOUNT + height + 1;
-                         ys += height){
-                        for (int xs = xOffset - bottomRight.first - OFF_SCREEN_AMOUNT - width;
-                                 xs <= bottomRight.first + xOffset + OFF_SCREEN_AMOUNT + width + 1;
-                                 xs += width){                                
+                    for (int ys =  yOffset - (getWindowHeight() / 2) - (int)settings["offscreen amount"] - height;
+                             ys <= yOffset + (getWindowHeight() / 2) + (int)settings["offscreen amount"] + height;
+                             ys += height){
+                        if(ys < abs(topLeft1.second))
+                            topLeft1.second = ys + yAdjust + repeatedyAdjust;
+                        for (int xs =  xOffset - (getWindowWidth() / 2) - (int)settings["offscreen amount"] - width;
+                                 xs <= xOffset + (getWindowWidth() / 2) + (int)settings["offscreen amount"] + width;
+                                 xs += width){
 
-                            std::pair<int, int> startPoint(xs + X_ADJUST + 2, ys + Y_ADJUST + 2);
-                            std::pair<int, int> endPoint(xs + xEndOffset + X_ADJUST + 2, ys + yEndOffset + Y_ADJUST + 2);
+                            std::pair<int, int> startPoint(xs + xAdjust + repeatedxAdjust, ys + yAdjust + repeatedyAdjust);
+                            std::pair<int, int> endPoint(xs + xEndOffset + xAdjust + repeatedxAdjust, ys + yEndOffset + yAdjust + repeatedyAdjust);
                             Line tmp2(startPoint, endPoint);
                             newPattern.push_back(tmp2);
-                            if (first){
-                                start.first  = startPoint.first - xOffset;
-                                start.second =  startPoint.second - yOffset;
-                                first = false;
-                            }
+
+                            if(xs < abs(topLeft1.first))
+                                topLeft1.first = xs + xAdjust + repeatedxAdjust - xOffset;
                         }
                     }
                 } // end of if statement
 		    } // end of for loop
 
-            start.second = abs(topLeft.second - OFF_SCREEN_AMOUNT - height) + abs(topLeft.second + OFF_SCREEN_AMOUNT + height + 1);
-            start.first  = abs(bottomRight.first - OFF_SCREEN_AMOUNT - width) + abs(bottomRight.first + OFF_SCREEN_AMOUNT + width + 1);
+            // draw the box in the middle of the screen
+
+            // topLeft1.first = (round((float)getWindowWidth() / (float)width) * (float)width) / 2;
+            // topLeft1.first = (round((float)getWindowHeight() / (float)height) * (float)height) / 2;
+            debugVar("height", height);
+            debugVar("width", width);
+
+            // for (int ys = -(getWindowHeight() / 2) - (int)settings["offscreen amount"] - height;
+            //          ys <= (getWindowHeight() / 2) + (int)settings["offscreen amount"] + height;
+            //          ys += height) {
+            //     for (int xs = -(getWindowWidth() / 2) - (int)settings["offscreen amount"] - width;
+            //              xs <= (getWindowWidth() / 2) + (int)settings["offscreen amount"] + width;
+            //              xs += width) {
+
+            //         // if(isCloseEnough(xs, xAdjust, topLeft1.first))
+            //         //     topLeft1.first = xs;
+            //         // if(isCloseEnough(ys, yAdjust, topLeft1.second))
+            //         //     topLeft1.second = ys;
+            //         if(abs(xs) > topLeft1.first)
+            //             topLeft1.first = xs;
+            //         if(abs(ys) > topLeft1.second)
+            //             topLeft1.second = ys;
+            //     }
+            // }
+
+
+
+
+            // start.first  = (int)settings["offscreen amount"] + width + getWindowWidth();
+            // start.first = abs((getWindowWidth() / 2) - (int)settings["offscreen amount"] - width) + abs((getWindowWidth() / 2) + (int)settings["offscreen amount"] + height);
+            // int fullWidth  = (((int)settings["offscreen amount"] + width)  * 2) + getWindowWidth();
+            // int fullHeight = (((int)settings["offscreen amount"] + height) * 2) + getWindowHeight();
+            // start.second = abs((getWindowHeight() / 2) - (int)settings["offscreen amount"] - height) + abs((getWindowHeight() / 2) + (int)settings["offscreen amount"] + height);
+            
 
             // std::cout << "start = " << start.first << ", " << start.second << std::endl;
-            topLeft1.first = (((start.first / 2) / width) * width) - (start.first / 2);
-            topLeft1.second = (((start.second / 2) / height) * height) - (start.second / 2);
-            topLeft1.first = int(round(float(topLeft1.first) / float(dots.dotSpread)) * float(dots.dotSpread)) + X_ADJUST;
-            topLeft1.second = int(round(float(topLeft1.second) / float(dots.dotSpread)) * float(dots.dotSpread)) + Y_ADJUST;
+            // topLeft1.first = (((start.first / 2) / width) * width) - (start.first / 2);
+            // topLeft1.second = (((start.second / 2) / height) * height) - (start.second / 2);
+            // topLeft1.first  = int(round(((float)fullWidth / 2.0f) / (float)width)  * (float)width) - (fullWidth / 2);// - (start.first / 2);
+            // topLeft1.second = int(round(((float)fullHeight/ 2.0f) / (float)height) * (float)height) - (fullHeight / 2);// - (start.second / 2);
+            // topLeft1.first  = int(floor(float(width)  / float(settings["dot spread"])) * float(settings["dot spread"])) + xAdjust;
+            // topLeft1.second = int(floor(float(height) / float(settings["dot spread"])) * float(settings["dot spread"])) + yAdjust;
+            debugVar("top left corner of the box", topLeft1);
 
-            // draw the box in the middle of the screen
             // define the corners
             std::pair<int, int> topRight, bottomLeft, bottomRight1;
 

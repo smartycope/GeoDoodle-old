@@ -1,9 +1,4 @@
 /*********************************************
- * Header file:
- *    UI INTERFACE
- * Author:
- *    Copeland Carter
- * Summary:
  *    This module will create an OpenGL window,
  *    enter the OpenGL main loop, and accept events.
  *    The main methods are:
@@ -17,10 +12,10 @@
 #ifndef UI_INTERFACE_H
 #define UI_INTERFACE_H
 
+#define START_WIDTH  400 // in settings 
+#define START_HEIGHT 400 // in settings
 #include <iostream>
-
-// #define GLUT_CURSOR_NONE 0x0065
-// #define GLUT_CURSOR_RIGHT_ARROW 0x0000
+#include "glutCallbacks.h"
 
 void setMouse(bool hidden);
 
@@ -33,21 +28,17 @@ class Interface{
 public:
    // Default constructor useful for setting up the random variables
    // or for opening the file for output
-   Interface() { 
-    //    std::pair<int, int> tmp1(-50, 50);
-    //    std::pair<int, int> tmp2(50, -50);
-    //    initialize(0, 0x0000, "Window", tmp1, tmp2); 
-       initialize(0, 0x0000, "Window", std::pair<int, int>(-50, 50), std::pair<int, int>(50, -50)); 
+   Interface() {
+       initialize(0, 0x0000, "Window"); 
     };
 
-   // Constructor if you want to set up the window with anything but
-   // the default parameters
-   Interface(int argc, char ** argv, const char * title, std::pair<int, int> topLeft, std::pair<int, int> bottomRight){
-      initialize(argc, argv, title, topLeft, bottomRight);
+   // Constructor if you want to set up the window with anything but the default parameters
+   Interface(int argc, char ** argv, const char * title){
+      initialize(argc, argv, title);
    }
    
    // Destructor, incase any housecleaning needs to occur
-   ~Interface();
+   ~Interface() { };
 
    // This will set the game in motion
    void run(void (*callBack)(const Interface *, void *), void *p);
@@ -114,7 +105,6 @@ public:
    }
 
    std::pair<int, int> getMouseLoc() const {
-    // std::cout << "The mouse is at " << mouseLoc.first << ", " << mouseLoc.second << std::endl;
     return mouseLoc;
    };
   
@@ -124,7 +114,7 @@ public:
    
 
 private:
-   void initialize(int argc, char ** argv, const char * title, std::pair<int, int> topLeft, std::pair<int, int> bottomRight);
+   void initialize(int argc, char ** argv, const char * title);
 
    static bool         initialized;  // only run the constructor once!
    static double       timePeriod;   // interval between frame draws
@@ -160,46 +150,7 @@ private:
    */
    static std::pair<int, int> mouseLoc;
 
-   
    // add key here
 };
-
-/************************************************************************
- * DRAW CALLBACK
- * This is the main callback from OpenGL. It gets called constantly by
- * the graphics engine to refresh and draw the window.  Here we will
- * clear the background buffer, draw on it, and send it to the forefront
- * when the appropriate time period has passsed.
- *
- * Note: This and all other callbacks can't be member functions, they must
- * have global scope for OpenGL to see them.
- *************************************************************************/
-void drawCallback();
-
-/************************************************************************
- * KEY DOWN CALLBACK
- * When a key on the keyboard has been pressed, we need to pass that
- * on to the client.  Currnetly, we are only registering the arrow keys
- *************************************************************************/
-void keyDownCallback(int key, int x, int y);
-
-/************************************************************************
- * KEY UP CALLBACK
- * When the user has released the key, we need to reset the pressed flag
- *************************************************************************/
-void keyUpCallback(int key, int x, int y);
-
-/***************************************************************
- * KEYBOARD CALLBACK
- * Generic callback to a regular ascii keyboard event, such as
- * the space bar or the letter 'q'
- ***************************************************************/
-void keyboardCallback(unsigned char key, int x, int y);
-
-/************************************************************************
- * RUN
- * Set the game in action.  We will get control back in our drawCallback
- *************************************************************************/
-void run();
 
 #endif // UI_INTERFACE_H
