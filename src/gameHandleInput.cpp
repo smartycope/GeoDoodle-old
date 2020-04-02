@@ -6,6 +6,14 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <fstream>
+// #include <QInputDialog>
+#include <QFileDialog>
+//#include <QWidget>
+// #include <QtQuickWidgets/QQuickWidget>
+// #include <QApplication>
+#include <QGuiApplication>
+// #include <QQmlApplicationEngine>
+#include <QQmlEngine>
 
 /* 
 *	Unitl I find some way in game to explain which keys do what...
@@ -139,7 +147,6 @@ void Game::handleInput(const Interface& ui){
 		allowDown = 0;
 	}
 
-	// Check for "Spacebar"
 	if (ui.isSpace()) {
 		// spacebar code
          // are you still holding an unfinished line?
@@ -208,7 +215,7 @@ void Game::handleInput(const Interface& ui){
 			pattern.back().finish(dots.getFocus());
             repeatLine();
 		}
-        if (IS_DEBUG) { std::cout << dots.getFocusX() << ", " << dots.getFocusY() << std::endl; };
+        if (IS_DEBUG) { std::cout << dots.getFocusX() << ", " << dots.getFocusY() << std::endl; }
         // debug();
 	}
 
@@ -328,73 +335,118 @@ void Game::handleInput(const Interface& ui){
 
     if (ui.isSlash() or ui.isQuestion()){
         drawMenu = true;
-    }
-
-    if (not ui.isSlash() and not ui.isQuestion()){
+    } else {
         drawMenu = false;
     }
 
-    if (ui.isF5()){
-        std::string fileName;
-        std::string fileName2;
-        std::cout << "\nPlease enter a file name here: ";
-        std::getline(std::cin, fileName);
-        // std::cin  >> fileName;
-        // if(fileName.find('.')){
-        //     fileName = "../saves/" + fileName;
-        // }
-        // else{
-        //     fileName = "../saves/" + fileName + ".gdl";
-        // }
-        fileName2 = fileName;
-        fileName = "../saves/" + fileName + ".gdl";
-        std::ofstream fout(fileName);
+    if((ui.isSlash() or ui.isQuestion()) and ui.isCtrl()){
+        QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-        nlohmann::json jsn;
-        for (auto it = pattern.begin(); it != pattern.end(); it++){
-            (*it).to_json(jsn, (*it));
+        QGuiApplication app(argc, argv);
+
+        QQmlApplicationEngine engine;
+        const QUrl url(QStringLiteral("qrc:/main.qml"));
+        QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
+                        &app, [url](QObject *obj, const QUrl &objUrl) {
+            if (!obj && url == objUrl)
+                QCoreApplication::exit(-1);
+        }, Qt::QueuedConnection);
+        engine.load(url);
+
+        //return app.exec();
+
+        // bring up the settings gui
+
+        // QQuickWidget *view = new QQuickWidget;
+        /* 
+        QQuickWidget vw;
+        vw.setSource(QUrl::fromLocalFile("settingsLayout.qml"));
+        vw.show();
+        */
+        // Dialog{
+        //     id: dialog
+        //     title: "Settings"
+        //     modal: true
+        //     standardButtons: Dialog.Apply | Dialog.Discard
+
+        //     onAccepted: console.log("Ok clicked")
+        //     onRejected: console.log("Cancel clicked")
+        // }
+    }
+
+
+    // if (not ui.isSlash() and not ui.isQuestion()){
+    //     drawMenu = false;
+    // }
+
+    if (ui.isF5()){
+        QFileDialog dialog;
+        dialog.setFileMode(QFileDialog::AnyFile);
+        auto file = dialog.getSaveFileName(nullptr, "Save Pattern", "/home/Robert/GeoDoodle/", "GeoDoodle Pattern Files (*.gdl)"); //, "*.gdl");
+        std::string fileName = file.toStdString();
+
+        std::ofstream fout(fileName);
+        if (fout.fail()) {
+            std::cout << "Unable to open " << fileName << "\n";
+        } else {
+
+            nlohmann::json jsn;
+            // jsn["dot spread"] = int(settings["dot spread"]);
+            // jsn["dot spread"] = settings.get<int>("dot spread");
+            jsn += nlohmann::json{{"dotspread", int(settings["dot spread"])}};
+            // debug("dot spread settings", settings["dot spread"]);
+            // std::cout << "dot spread settings = " << settings["dot spread"] << std::endl;
+            // jsn.push_back("dot spread", settings["dot spread"]);
+            for (auto it = pattern.begin(); it != pattern.end(); it++){
+                (*it).to_json(jsn, (*it));
+            }
+            // jsn = pattern;
+            fout << jsn.dump(3);
+            fout.close();
+            std::cout << "Done!\n";
         }
-        // jsn = pattern;
-        fout << jsn.dump(3);
-        fout.close();
-        std::cout << "Done! Look for \'" << fileName2 << ".gdl\' in the saves folder.\n";
-        std::cout << '(' << fileName << ")\n";
     }
 
     if (ui.isF9()){
-        pattern.clear();
-        std::string fileName;
-        std::string fileName2;
-        std::cout << "\nPlease enter a file name to open: ";
-        std::getline(std::cin, fileName);
-        // if(fileName.find('.')){
-        //     fileName = "../saves/" + fileName;
-        // }
-        // else{
-        //     fileName = "../saves/" + fileName + ".gdl";
-        // }
-        fileName2 = fileName;
-        fileName = "../saves/" + fileName + ".gdl";
+        auto file = QFileDialog::getOpenFileName(0, "Open Pattern", "/home/Robert/Geodoodle/", "GeoDoodle Pattern Files (*.gdl)");
+        std::string fileName = file.toStdString();
+
         std::ifstream fin(fileName);
-        if (fin.fail()) { std::cout << "Unable to open " << fileName2 << ".gdl\n"; }
+        if (fin.fail()) {
+            std::cout << "Unable to open " << fileName << "\n"; 
+        } else {
 
-        nlohmann::json jsn;
-        fin >> jsn;
-        int debug = 0;
+            pattern.clear();
 
-        for (nlohmann::json::iterator it = jsn.begin(); it != jsn.end(); ++it){
-            Line l;
-            (*it).at("startX").get_to(l.start.first);
-            (*it).at("startY").get_to(l.start.second);
-            (*it).at("endX").get_to(l.end.first);
-            (*it).at("endY").get_to(l.end.second);
-            l.isFinished = true;
+            nlohmann::json jsn;
 
-            pattern.push_back(l);
+            try{
+                fin >> jsn;
+                debug();
+                nlohmann::json::iterator it = jsn.begin();
+
+                std::cout << *it << std::endl;
+
+                settings["dot spread"] = (*it)["dotspread"];
+
+                for (++it; it != jsn.end(); ++it){
+                    Line l;
+                    (*it).at("startX").get_to(l.start.first);
+                    (*it).at("startY").get_to(l.start.second);
+                    (*it).at("endX").get_to(l.end.first);
+                    (*it).at("endY").get_to(l.end.second);
+                    l.isFinished = true;
+
+                    pattern.push_back(l);
+                }
+                std::cout << "Done reading!\n";
+                std::cout << "There are " << pattern.size() << " lines being drawn right now.\n";
+
+            } catch (nlohmann::detail::type_error){
+                std::cout << "Unable to read file: Incorrect file format.\n";
+            }
+            fin.close();
         }
-        fin.close();
-        std::cout << "Done reading!\n";
-        std::cout << "There are " << pattern.size() << " lines being drawn right now.\n";
     }
 
 	if(ui.isEnter()){
@@ -503,6 +555,13 @@ void Game::handleInput(const Interface& ui){
 
                             std::pair<int, int> startPoint(xs + xAdjust + repeatedxAdjust, ys + yAdjust + repeatedyAdjust);
                             std::pair<int, int> endPoint(xs + xEndOffset + xAdjust + repeatedxAdjust, ys + yEndOffset + yAdjust + repeatedyAdjust);
+                            
+                            // round to the closest dot -- hopefully  ~left off~
+                            startPoint.first  = int(floor(float(startPoint.first)  / float(settings["dot spread"])) * float(settings["dot spread"])) + xAdjust;
+                            endPoint.first    = int(floor(float(endPoint.first)    / float(settings["dot spread"])) * float(settings["dot spread"])) + yAdjust;
+                            startPoint.second = int(floor(float(startPoint.second) / float(settings["dot spread"])) * float(settings["dot spread"])) + xAdjust;
+                            endPoint.second   = int(floor(float(endPoint.second)   / float(settings["dot spread"])) * float(settings["dot spread"])) + yAdjust;
+                            
                             Line tmp2(startPoint, endPoint);
                             newPattern.push_back(tmp2);
 
@@ -553,8 +612,7 @@ void Game::handleInput(const Interface& ui){
             // topLeft1.second = (((start.second / 2) / height) * height) - (start.second / 2);
             // topLeft1.first  = int(round(((float)fullWidth / 2.0f) / (float)width)  * (float)width) - (fullWidth / 2);// - (start.first / 2);
             // topLeft1.second = int(round(((float)fullHeight/ 2.0f) / (float)height) * (float)height) - (fullHeight / 2);// - (start.second / 2);
-            // topLeft1.first  = int(floor(float(width)  / float(settings["dot spread"])) * float(settings["dot spread"])) + xAdjust;
-            // topLeft1.second = int(floor(float(height) / float(settings["dot spread"])) * float(settings["dot spread"])) + yAdjust;
+            
             debugVar("top left corner of the box", topLeft1);
 
             // define the corners

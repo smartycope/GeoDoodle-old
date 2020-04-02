@@ -1,22 +1,9 @@
 #include "game.h"
 #include <iostream>
 
-// #define RADIUS 5	    // radius of the focus circle - in settings
-#define CHECK_SETTINGS_DELAY 50 // how often you should compare the settings file to see if it's changed
-#define START_Y 100     // where should the text start 
-#define START_X -150
-#define LINE_OFFSET -25 // how much should each line be offset
-#define WELCOME_TEXT_1  "Welcome to GeoDoodle! Move the mouse or use the arrow keys,"
-#define WELCOME_TEXT_2  "and then click or press the space bar to make a line."
-#define X_INSTRUCT      "Press x to undo or cancel a line"
-#define M_INSTRUCT      ""
-#define BIG_X_INSTRUCT  ""
-#define SLASH_INSTRUCT  ""
-#define Q_INSTRUCT      ""
-#define ENTER_INSTRUCT  ""
-#define ENTER_INSTRUCT_2 ""
-// #define _INSTRUCT      ""
-#define CREDIT_TEXT     "Created by Copeland Carter."
+#define CHECK_SETTINGS_DELAY 100 // how often you should compare the settings file to see if it's changed
+#define START_Y 180     // where should the text start 
+#define START_X -190 
 
 void Game::advance(){
 	if (!drawMenu){
@@ -55,13 +42,15 @@ void Game::advance(){
             }
         }
 
-        //check to see if the settings have changed. If so, update the settings variable
+        //check to see if the settings have changed after a delay. If so, update the settings variable
         if (checkSettingsDelay > CHECK_SETTINGS_DELAY){
             nlohmann::json j = getSettings();
-            if ((settings != j) or (dots.settings != j)) {
-                dots.settings = j;
-                settings = j;
-                checkSettingsDelay++;
+            
+            if (settings != j) {
+                setSettings(settings);
+                dots.settings = settings;
+            } else if (dots.settings != j){
+                setSettings(dots.settings);
             }
         }
 
@@ -70,35 +59,28 @@ void Game::advance(){
         topLeft.second =  getWindowHeight() / 2;
 	    bottomRight.first  = getWindowWidth() / 2;
         bottomRight.second = -getWindowHeight() / 2;
+
+
+        checkSettingsDelay++;
 	}
     
 	// explination screen
-	else{
-        /* 
-		Point line1(START_X, START_Y);
-		Point line2(START_X, START_Y + LINE_OFFSET);
-		Point line3(START_X, START_Y + LINE_OFFSET * 2);
-		Point line4(START_X, START_Y + LINE_OFFSET * 3);
-        Point line5(START_X, START_Y + LINE_OFFSET * 4);
-        Point line6(START_X, START_Y + LINE_OFFSET * 5);
-        Point line7(START_X, START_Y + LINE_OFFSET * 6);
-        Point line8(START_X, START_Y + LINE_OFFSET * 7);
-        Point line9(START_X, START_Y + LINE_OFFSET * 8);
-        Point line10(START_X, START_Y + LINE_OFFSET * 9);
-        Point line11(START_X, START_Y + LINE_OFFSET * 10);
-        Point line12(START_X, START_Y + LINE_OFFSET * 11);
-        Point line13(START_X, START_Y + LINE_OFFSET * 12);
+	else {        
+        const std::string text =
+        "Welcome to GeoDoodle!\n"
+        "Use the mouse or the arrow keys to move, then click\n"
+        "or press the space bar to start a line.\n\n"
 
-		drawText(line1, WELCOME_TEXT_1);
-		drawText(line2, WELCOME_TEXT_2);
-		drawText(line3, X_INSTRUCT);
-        drawText(line4, Q_INSTRUCT);
-        drawText(line5, M_INSTRUCT);
-        drawText(line6, BIG_X_INSTRUCT);
-        drawText(line7, SLASH_INSTRUCT);
-        drawText(line8, ENTER_INSTRUCT);
-        drawText(line9, ENTER_INSTRUCT_2);
-        // drawText(line10, _INSTRUCT);
-		drawText(line13, CREDIT_TEXT); */
+        "x :\t undo or cancel the last line\n"
+        "c :\t end a line and start a new one\n"
+        "X :\t delete the lines over where the focus is\n"
+        "Q :\t delete all lines\n"
+        "? :\t display this help menu\n"
+        "m :\t show/hide the box\n\n\n\n\n\n"
+
+        "Made by Copeland Carter";
+        
+        std::pair<int, int> here(START_X, START_Y);
+        drawText(here, text);
 	}
 }
