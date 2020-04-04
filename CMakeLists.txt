@@ -10,6 +10,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake/Dependencies)
 # set(CMAKE_PREFIX_PATH)
 # set(CMAKE_PREFIX_PATH path/to/Qt5/lib/cmake)
 set(Qt5_DIR ${CMAKE_SOURCE_DIR}/CMake)
+# set(Qt5QDialog_DIR ${CMAKE_SOURCE_DIR}/CMake)
 
 # Turn on automatic invocation of the MOC, UIC & RCC
 set(CMAKE_AUTOMOC ON)
@@ -55,6 +56,7 @@ set(GeoDoodle_src
     src/gameAdvance.cpp
     src/gameHandleInput.cpp
     src/glutCallbacks.cpp
+    # src/qml.qrc
     )
 
 # Find dependencies
@@ -70,12 +72,12 @@ find_package(OpenGL REQUIRED)
 find_package(Qt5 REQUIRED
     Core
     Gui
-    # Widgets
+    Widgets
     Quick
     # QDialog
 )
 
-# find_package(Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt5 REQUIRED COMPONENTS Widgets)
 
 # Specify include directories
 include_directories(
@@ -87,24 +89,25 @@ include_directories(
 # Create the binary
 add_executable(${CMAKE_PROJECT_NAME} ${GeoDoodle_src})
 
-if(ANDROID)
-    add_library(GeoDoodle SHARED qml.qrc)
-else()
-    add_executable(GeoDoodle qml.qrc)
-endif()
+# if(ANDROID)
+#     add_library(GeoDoodle SHARED qml.qrc)
+# else()
+#     add_executable(GeoDoodle qml.qrc)
+# endif()
 
 # This line is saying "make sure you build freeglut before you build ^the project^".
 # This is useful for things that depend on other things, and/or multithreading your build.
 # Link the libraries
 add_dependencies(${CMAKE_PROJECT_NAME} freeglut)
 
-target_compile_definitions(GeoDoodle
-  PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+# target_compile_definitions(GeoDoodle PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 
-target_link_libraries(GeoDoodle PRIVATE Qt5::Core Qt5::Quick)
+# target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt5::Core Qt5::Quick)
 target_link_libraries(GeoDoodle Qt5::Widgets)
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
   ${FREEGLUT_LIBRARY}
   ${OPENGL_LIBRARIES}
+  Qt5::Core 
+  Qt5::Quick
 )

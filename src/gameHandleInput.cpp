@@ -11,9 +11,12 @@
 //#include <QWidget>
 // #include <QtQuickWidgets/QQuickWidget>
 // #include <QApplication>
-#include <QGuiApplication>
+// #include <QGuiApplication> -- 
 // #include <QQmlApplicationEngine>
-#include <QQmlEngine>
+// #include <QQmlEngine> -- 
+
+// round works best for 16, floor for 24. Still no idea why.
+#define HOW_TO_ROUND round // how to round the mouse to the nearest dot. options are round, floor, ceil, or trunc.
 
 /* 
 *	Unitl I find some way in game to explain which keys do what...
@@ -242,8 +245,8 @@ void Game::handleInput(const Interface& ui){
 		// Point curser(ui.getMouseLoc().first, ui.getMouseLoc().second);
         std::pair<int, int> tmp;//(ui.getMouseLoc());
 
-        tmp.first  = int(floor( float(ui.getMouseLoc().first)  / float(settings["dot spread"]) ) * float(settings["dot spread"])) + xAdjust;
-        tmp.second = int(floor( float(ui.getMouseLoc().second) / float(settings["dot spread"]) ) * float(settings["dot spread"])) + yAdjust;
+        tmp.first  = int(HOW_TO_ROUND( float(ui.getMouseLoc().first)  / float(settings["dot spread"]) ) * float(settings["dot spread"])) + xAdjust;
+        tmp.second = int(HOW_TO_ROUND( float(ui.getMouseLoc().second) / float(settings["dot spread"]) ) * float(settings["dot spread"])) + yAdjust;
 
         // tmp.first  = int(round( float(ui.getMouseLoc().first)  / float(settings["dot spread"]) ) * float(settings["dot spread"])) + xAdjust;
         // tmp.second = int(round( float(ui.getMouseLoc().second) / float(settings["dot spread"]) ) * float(settings["dot spread"])) + yAdjust;
@@ -338,7 +341,7 @@ void Game::handleInput(const Interface& ui){
     } else {
         drawMenu = false;
     }
-
+/*
     if((ui.isSlash() or ui.isQuestion()) and ui.isCtrl()){
         QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
@@ -372,7 +375,7 @@ void Game::handleInput(const Interface& ui){
         //     onAccepted: console.log("Ok clicked")
         //     onRejected: console.log("Cancel clicked")
         // }
-    }
+    // }
 
 
     // if (not ui.isSlash() and not ui.isQuestion()){

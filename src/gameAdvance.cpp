@@ -1,7 +1,6 @@
 #include "game.h"
 #include <iostream>
 
-#define CHECK_SETTINGS_DELAY 100 // how often you should compare the settings file to see if it's changed
 #define START_Y 180     // where should the text start 
 #define START_X -190 
 
@@ -76,8 +75,9 @@ void Game::advance(){
         "X :\t delete the lines over where the focus is\n"
         "Q :\t delete all lines\n"
         "? :\t display this help menu\n"
-        "m :\t show/hide the box\n\n\n\n\n\n"
+        "m :\t show/hide the box\n\n\n\n\n"
 
+        "Please send any bug reports to smartycope@gmail.com\n"
         "Made by Copeland Carter";
         
         std::pair<int, int> here(START_X, START_Y);

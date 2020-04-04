@@ -8,6 +8,8 @@
 #include "line.h"
 #include "glutCallbacks.h"
 
+#define CHECK_SETTINGS_DELAY 100 // how often you should compare the settings file to see if it's changed
+
 // #define KEY_REPEAT_DELAY 9 // in settings
 // #define OFF_SCREEN_AMOUNT 10 // in settings
 // These are to make the lines line up with the dots better. Honestly not sure why they're nessicary.
@@ -38,7 +40,7 @@ private:
     bool notOnDotUp         = false;
     bool notOnDotSide       = false;
     bool lineCatch          = false;
-    unsigned int checkSettingsDelay = 0;
+    unsigned int checkSettingsDelay = CHECK_SETTINGS_DELAY - 1;
     // this keeps track of how many lines you've added since a repeating line
     std::vector<int> isBigErase;
     // this dictates how many times you need to erase to erase a repeated line
