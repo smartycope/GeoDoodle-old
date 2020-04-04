@@ -33,3 +33,4 @@ void debug(const std::string &message, int line = -1);
 void debug(int line = -1);
 void debugVar(const std::string &varName, int var);
 void debugVar(const std::string &varName, std::pair<int, int> var);
+void debugVar(int var);

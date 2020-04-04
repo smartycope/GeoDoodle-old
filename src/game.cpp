@@ -19,9 +19,9 @@ Game::Game() : dots(Array()) {
 
     settings = getSettings();
 
-    settings["dot spread"] = pixCount();
-    xAdjust = int((float)settings["dot spread"] / 3.0f) + 1;
-    yAdjust = int((float)settings["dot spread"] / 3.0f) + 9;
+    // settings["dot spread"] = pixCount();
+    xAdjust = int((float)settings["dot spread"] / 3.0f) - 4;  // 24 = +1 -- 
+    yAdjust = int((float)settings["dot spread"] / 3.0f) - 4;  // 24 = +9
 
     // dots.setFocus(std::pair<int, int>(int(settings["dot spread"]), int(settings["dot spread"])));
     // dots.setFocus(std::pair<int, int>(100, 100));

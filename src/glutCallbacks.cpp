@@ -229,3 +229,10 @@ void debugVar(const std::string &varName, std::pair<int, int> var){
         
     std::cout << ++debugNum << ": " << varName << " = " << var.first << ", " << var.second << std::endl;
 }
+
+void debugVar(int var){
+    if (not IS_DEBUG)
+        return;
+
+    std::cout << ++debugNum << ": "  << var << std::endl;
+}

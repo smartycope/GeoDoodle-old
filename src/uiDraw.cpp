@@ -41,6 +41,7 @@ using namespace std;
 #define deg2rad(value) ((M_PI / 180) * (value))
 #define ARRAY_WIDTH 10
 #define BORDER_WIDTH 5
+#define LINE_OFFSET -25 // how much should each line be offset
 
 // code for changing the color (don't forget to change it back afterwards!)
 // glColor3f(0, 0, 0);
@@ -53,20 +54,20 @@ using namespace std;
  * Note how -1 indicates "done".  These are paired
  * coordinates where the even are the x and the odd
  * are the y and every 2 pairs represents a point
- ********************************************/
-const char NUMBER_OUTLINES[10][20] =
-{
-  {0, 0,  7, 0,   7, 0,  7,10,   7,10,  0,10,   0,10,  0, 0,  -1,-1, -1,-1},//0
-  {7, 0,  7,10,  -1,-1, -1,-1,  -1,-1, -1,-1,  -1,-1, -1,-1,  -1,-1, -1,-1},//1
-  {0, 0,  7, 0,   7, 0,  7, 5,   7, 5,  0, 5,   0, 5,  0,10,   0,10,  7,10},//2
-  {0, 0,  7, 0,   7, 0,  7,10,   7,10,  0,10,   4, 5,  7, 5,  -1,-1, -1,-1},//3
-  {0, 0,  0, 5,   0, 5,  7, 5,   7, 0,  7,10,  -1,-1, -1,-1,  -1,-1, -1,-1},//4
-  {7, 0,  0, 0,   0, 0,  0, 5,   0, 5,  7, 5,   7, 5,  7,10,   7,10,  0,10},//5
-  {7, 0,  0, 0,   0, 0,  0,10,   0,10,  7,10,   7,10,  7, 5,   7, 5,  0, 5},//6
-  {0, 0,  7, 0,   7, 0,  7,10,  -1,-1, -1,-1,  -1,-1, -1,-1,  -1,-1, -1,-1},//7
-  {0, 0,  7, 0,   0, 5,  7, 5,   0,10,  7,10,   0, 0,  0,10,   7, 0,  7,10},//8
-  {0, 0,  7, 0,   7, 0,  7,10,   0, 0,  0, 5,   0, 5,  7, 5,  -1,-1, -1,-1} //9
-};
+ ********************************************/ 
+// const char NUMBER_OUTLINES[10][20] =
+// {
+//   {0, 0,  7, 0,   7, 0,  7,10,   7,10,  0,10,   0,10,  0, 0,  -1,-1, -1,-1},//0
+//   {7, 0,  7,10,  -1,-1, -1,-1,  -1,-1, -1,-1,  -1,-1, -1,-1,  -1,-1, -1,-1},//1
+//   {0, 0,  7, 0,   7, 0,  7, 5,   7, 5,  0, 5,   0, 5,  0,10,   0,10,  7,10},//2
+//   {0, 0,  7, 0,   7, 0,  7,10,   7,10,  0,10,   4, 5,  7, 5,  -1,-1, -1,-1},//3
+//   {0, 0,  0, 5,   0, 5,  7, 5,   7, 0,  7,10,  -1,-1, -1,-1,  -1,-1, -1,-1},//4
+//   {7, 0,  0, 0,   0, 0,  0, 5,   0, 5,  7, 5,   7, 5,  7,10,   7,10,  0,10},//5
+//   {7, 0,  0, 0,   0, 0,  0,10,   0,10,  7,10,   7,10,  7, 5,   7, 5,  0, 5},//6
+//   {0, 0,  7, 0,   7, 0,  7,10,  -1,-1, -1,-1,  -1,-1, -1,-1,  -1,-1, -1,-1},//7
+//   {0, 0,  7, 0,   0, 5,  7, 5,   0,10,  7,10,   0, 0,  0,10,   7, 0,  7,10},//8
+//   {0, 0,  7, 0,   7, 0,  7,10,   0, 0,  0, 5,   0, 5,  7, 5,  -1,-1, -1,-1} //9
+// };
 
 /*************************************************************************
  * DRAW TEXT
@@ -74,17 +75,22 @@ const char NUMBER_OUTLINES[10][20] =
  *   INPUT  topLeft   The top left corner of the text
  *          text      The text to be displayed
  ************************************************************************/
-void drawText(const std::pair<int, int> &topLeft, const std::string &text)
-{
+void drawText(std::pair<int, int> topLeft, const std::string &text){
    void *pFont = GLUT_BITMAP_HELVETICA_12;  // also try _18
 
    // prepare to draw the text from the top-left corner
    glRasterPos2f(topLeft.first, topLeft.second);
 
    // loop through the text
-//    for (const char *p = text; *p; p++)
-   for (auto it = text.begin(); it != text.end(); it++)
-      glutBitmapCharacter(pFont, *it);
+    // for (const char p = text.front(); p != ; p++)
+    for (auto it = text.begin(); it != text.end(); ++it){
+        if (*it == '\n'){
+            topLeft.second += LINE_OFFSET;
+            glRasterPos2f(topLeft.first, topLeft.second);
+        }
+        else
+            glutBitmapCharacter(pFont, *it);
+    }
 }
 
 /************************************************************************

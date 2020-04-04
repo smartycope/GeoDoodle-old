@@ -1,0 +1,26 @@
+[
+   {
+      "endX": -63,
+      "endY": -7,
+      "startX": 9,
+      "startY": 65
+   },
+   {
+      "endX": 33,
+      "endY": -79,
+      "startX": -63,
+      "startY": -7
+   },
+   {
+      "endX": 129,
+      "endY": -7,
+      "startX": 33,
+      "startY": -79
+   },
+   {
+      "endX": 9,
+      "endY": 65,
+      "startX": 129,
+      "startY": -7
+   }
+]

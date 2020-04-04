@@ -10,13 +10,12 @@
 
 #include <string>     // To display text on the screen
 #include <cmath>      // for M_PI, sin() and cos()
-// using std::string;
 
 /*************************************************************************
  * DRAW TEXT
  * Draw text using a simple bitmap font
  ************************************************************************/
-void drawText(const std::pair<int, int> &topLeft, std::string);
+void drawText(std::pair<int, int> topLeft, const std::string &text);
 
 /************************************************************************
  * ROTATE

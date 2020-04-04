@@ -31,6 +31,8 @@
 #include "uiDraw.h"
 #include <iostream>
 #include "glutCallbacks.h"
+// #include <QApplication>
+// #include <QInputDialog>
 
 /*************************************
  * All the interesting work happens here, when
@@ -54,6 +56,8 @@ void callBack(const Interface *pUI, void *p){
 int main(int argc, char ** argv){
    std::pair<int, int> topLeft(-200, 200);
    std::pair<int, int> bottomRight(200, -200);
+
+//    QApplication app(argc, argv);
 
    // default settings
 //    nlohmann::json j;
