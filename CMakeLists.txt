@@ -6,6 +6,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake/Dependencies)
+set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_C_COMPILER "clang")
+
+# set(CMAKE_CXX_COMPILER "/usr/bin/clang")
+# set(CMAKE_C_COMPILER "/usr/bin/clang")
+
 # set(CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/CMake/Qt5)
 # set(CMAKE_PREFIX_PATH)
 # set(CMAKE_PREFIX_PATH path/to/Qt5/lib/cmake)
@@ -37,16 +43,16 @@ set(CMAKE_CXX_FLAGS "-std=c++1z -O3")
 
 
 #Making the compiler as strict as possible
-#set(CMAKE_CXX_FLAGS "-std=c++1z -fno-elide-constructors 
-# -pedantic-errors -Werror -Wextra -Wall -Wpedantic -Winit-self 
-# -Wmissing-declarations -Wuninitialized -Woverloaded-virtual 
+#set(CMAKE_CXX_FLAGS "-std=c++1z -fno-elide-constructors
+# -pedantic-errors -Werror -Wextra -Wall -Wpedantic -Winit-self
+# -Wmissing-declarations -Wuninitialized -Woverloaded-virtual
 # -Wold-style-cast -Wfatal-errors -O3 -static")
 #add_definitions(${CMAKE_CXX_FLAGS})
 
 #Location of source files
 #file(GLOB SOURCE src/*.cpp src/*.hpp)
 set(GeoDoodle_src
-    src/driver.cpp 
+    src/driver.cpp
     src/uiInteract.cpp
     # src/point.cpp
     src/game.cpp
@@ -69,11 +75,13 @@ set(GeoDoodle_src
 
 find_package(OpenGL REQUIRED)
 
+find_package(PNG REQUIRED)
+
 find_package(Qt5 REQUIRED
     Core
     Gui
     Widgets
-    Quick
+    # Quick
     # QDialog
 )
 
@@ -84,6 +92,7 @@ include_directories(
     ${OpenGL_INCLUDE_DIR}
     ${FREEGLUT_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}
+    ${PNG_INCLUDE_DIR}
 )
 
 # Create the binary
@@ -108,6 +117,7 @@ target_link_libraries(GeoDoodle Qt5::Widgets)
 target_link_libraries(${CMAKE_PROJECT_NAME}
   ${FREEGLUT_LIBRARY}
   ${OPENGL_LIBRARIES}
-  Qt5::Core 
-  Qt5::Quick
+  ${PNG_LIBRARY}
+  Qt5::Core
+  # Qt5::Quick
 )

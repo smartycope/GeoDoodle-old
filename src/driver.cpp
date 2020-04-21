@@ -3,15 +3,16 @@
  * Author: Copeland Carter
  *
  * This is main.
- * 
+ *
  * Suggested features:
  * fix the "d" key bug
- * add a button that shows all the keys and what they do
+:) add a button that shows all the keys and what they do
 :) hide the mouse when you press the arrow keys
 :) add a button that hides/gets rid of the metalines
 :) switch the 'c' key and the space key - didn't like it, switched back
+ -   added it to settings
 :) expand and center the dots array so it goes off screen better
- * consider moving the enter key to some other key
+ * consider moving the enter key to some other key - add to settings?
 :) add smaller dots within the dots so repeating can actually work
  * fix it so when a line runs out of the original area, it cuts it
  *   off where is ends, but still draws it.
@@ -19,20 +20,24 @@
  * add a camera you can move around
 :) add saving (i.e. serialization and deserialization)
  * add saving to a pdf
- * make the repeater area smarter (i.e. make the area 
+ * make the repeater area smarter (i.e. make the area
  *   more closely follow the lines, not just in a square)
+ *   Maybe have it (somehow) recognize if it's a tesselation, and
+ *   then have an x and a y setting pop up to specify the overlap.
+ *   Perhaps have different kinds tesselation presets?
  * allow screen resizing
  * add mirroring
 :) add instant repeating inside of the metabox (toggles with m)
  * add the ability to change how much space is between the dots
+ * add middle click button = X
+ * consider changing the name "GeoDoodle" to "The Tesselator"
  ******************************************************/
 #include "game.h"
 #include "uiInteract.h"
 #include "uiDraw.h"
 #include <iostream>
 #include "glutCallbacks.h"
-// #include <QApplication>
-// #include <QInputDialog>
+#include <QApplication>
 
 /*************************************
  * All the interesting work happens here, when
@@ -43,7 +48,7 @@
  **************************************/
 void callBack(const Interface *pUI, void *p){
    Game *pGame = (Game *)p;
-   
+
    pGame->advance();
    pGame->handleInput(*pUI);
 }
@@ -54,12 +59,14 @@ void callBack(const Interface *pUI, void *p){
  * That is all!
  *********************************/
 int main(int argc, char ** argv){
-   std::pair<int, int> topLeft(-200, 200);
-   std::pair<int, int> bottomRight(200, -200);
+  std::cout << "Debugging level is " << VERBOSE << std::endl;
 
-//    QApplication app(argc, argv);
+  std::pair<int, int> topLeft(-200, 200);
+  std::pair<int, int> bottomRight(200, -200);
 
-   // default settings
+  QApplication app(argc, argv); // This *may* not be nessicary.
+
+  // default settings
 //    nlohmann::json j;
 //    j.emplace("dot spread", 16);
 //    j.emplace("start height", 400);
@@ -72,10 +79,10 @@ int main(int argc, char ** argv){
 //    setSettings(j);
 //    j.emplace("", );
 
-   
-   Interface ui(argc, argv, "GeoDoodle");
-   Game game;
-   ui.run(callBack, &game);
-   
-   return 0;
+
+  Interface ui(argc, argv, "GeoDoodle");
+  Game game;
+  ui.run(callBack, &game);
+
+  return 0;
 }

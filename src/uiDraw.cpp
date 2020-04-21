@@ -29,7 +29,7 @@
 #ifdef _WIN32
 #include <stdio.h>
 #include <stdlib.h>
-#include <GL/glut.h>         // OpenGL library we copied 
+#include <GL/glut.h>         // OpenGL library we copied
 #define _USE_MATH_DEFINES
 #include <math.h>
 #endif // _WIN32
@@ -41,7 +41,7 @@ using namespace std;
 #define deg2rad(value) ((M_PI / 180) * (value))
 #define ARRAY_WIDTH 10
 #define BORDER_WIDTH 5
-#define LINE_OFFSET -25 // how much should each line be offset
+#define LINE_OFFSET 18 // how far each line should go down for a newline
 
 // code for changing the color (don't forget to change it back afterwards!)
 // glColor3f(0, 0, 0);
@@ -54,7 +54,7 @@ using namespace std;
  * Note how -1 indicates "done".  These are paired
  * coordinates where the even are the x and the odd
  * are the y and every 2 pairs represents a point
- ********************************************/ 
+ ********************************************/
 // const char NUMBER_OUTLINES[10][20] =
 // {
 //   {0, 0,  7, 0,   7, 0,  7,10,   7,10,  0,10,   0,10,  0, 0,  -1,-1, -1,-1},//0
@@ -85,7 +85,7 @@ void drawText(std::pair<int, int> topLeft, const std::string &text){
     // for (const char p = text.front(); p != ; p++)
     for (auto it = text.begin(); it != text.end(); ++it){
         if (*it == '\n'){
-            topLeft.second += LINE_OFFSET;
+            topLeft.second -= LINE_OFFSET;
             glRasterPos2f(topLeft.first, topLeft.second);
         }
         else
@@ -103,7 +103,7 @@ void drawText(std::pair<int, int> topLeft, const std::string &text){
  *          rotation True circles are rotation independent.  However, if you
  *                   are drawing a 3-sided polygon (triangle), this matters!
  *************************************************************************
- 
+
 void drawPolygon(const std::pair<int, int> &center, int radius, int points, int rotation) {
    // begin drawing
    glBegin(GL_LINE_LOOP);
@@ -133,7 +133,7 @@ void drawPolygon(const std::pair<int, int> &center, int radius, int points, int 
  *           rotation Rotation in degrees
  *    OUTPUT point    The new position
  *************************************************************************
- 
+
 void rotate(std::pair<int, int> &point, const std::pair<int, int> &origin, int rotation){
    // because sine and cosine are expensive, we want to call them only once
    double cosA = cos(deg2rad(rotation));
@@ -177,7 +177,7 @@ void drawLine(const std::pair<int, int> &begin, const std::pair<int, int> &end,
 
 /******************************************************************
  * RANDOM
- * This function generates a random number.  
+ * This function generates a random number.
  *
  *    INPUT:   min, max : The number of values (min <= num <= max)
  *    OUTPUT   <return> : Return the integer
@@ -193,7 +193,7 @@ int random(int min, int max)
 
 /******************************************************************
  * RANDOM
- * This function generates a random number.  
+ * This function generates a random number.
  *
  *    INPUT:   min, max : The number of values (min <= num <= max)
  *    OUTPUT   <return> : Return the double
@@ -202,7 +202,7 @@ double random(double min, double max)
 {
    assert(min <= max);
    double num = min + ((double)rand() / (double)RAND_MAX * (max - min));
-   
+
    assert(min <= num && num <= max);
 
    return num;
@@ -218,11 +218,11 @@ double random(double min, double max)
  *         height    Vertical size
  *         rotation  Orientation
  *************************************************************************
- 
+
 void drawRect(const std::pair<int, int> &center, int width, int height, int rotation)
 {
    Point tl(false); // top left
-   Point tr(false); // top right 
+   Point tr(false); // top right
    Point bl(false); // bottom left
    Point br(false); // bottom right
 
@@ -277,9 +277,9 @@ void drawCircle(const std::pair<int, int> &center, int radius)
    for (double radians = 0; radians < M_PI * 2.0; radians += increment)
       glVertex2f(center.first + (radius * cos(radians)),
                  center.second + (radius * sin(radians)));
-   
+
    // complete drawing
-   glEnd();   
+   glEnd();
 }
 
 /************************************************************************
@@ -297,6 +297,6 @@ void drawDot(const std::pair<int, int> &point){
    glVertex2f(point.first + 1, point.second + 1);
    glVertex2f(point.first,     point.second + 1);
 
-   // Done!  OK, that was a bit too dramatic
+   // Done!  Okay, that was a bit too dramatic
    glEnd();
 }

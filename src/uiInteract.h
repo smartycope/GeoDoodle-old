@@ -12,10 +12,17 @@
 #ifndef UI_INTERFACE_H
 #define UI_INTERFACE_H
 
-#define START_WIDTH  400 // in settings 
-#define START_HEIGHT 400 // in settings
 #include <iostream>
 #include "glutCallbacks.h"
+
+// #define START_WIDTH  400 // in settings
+// #define START_HEIGHT 400 // in settings
+
+// #define START_WIDTH  int(getSettings()["start width" ])
+// #define START_HEIGHT int(getSettings()["start height"])
+
+#define START_WIDTH  100
+#define START_HEIGHT 700
 
 void setMouse(bool hidden);
 
@@ -29,14 +36,14 @@ public:
    // Default constructor useful for setting up the random variables
    // or for opening the file for output
    Interface() {
-       initialize(0, 0x0000, "Window"); 
+       initialize(0, 0x0000, "Window");
     };
 
    // Constructor if you want to set up the window with anything but the default parameters
    Interface(int argc, char ** argv, const char * title){
       initialize(argc, argv, title);
    }
-   
+
    // Destructor, incase any housecleaning needs to occur
    ~Interface() { };
 
@@ -54,20 +61,21 @@ public:
 
    // How many frames per second are we configured for?
    void setFramesPerSecond(double value);
-   
+
    // Key event indicating a key has been pressed or not. The callbacks
    // should be the only onces to call this
    void keyEvent(int key, bool fDown);
    void keyEvent();
    void modKeyEvent(int key, bool fDown);
    void modKeyEvent();
+   void reshapeWindow(int width, int height);
 
    // Current frame rate
    double frameRate() const { return timePeriod; };
 
    void hideCursor() const { setMouse(true);  };
    void showCursor() const { setMouse(false); };
-   
+
    // Get various key events
    int  isDown()        const { return isDownPress;  };
    int  isUp()          const { return isUpPress;    };
@@ -93,13 +101,13 @@ public:
    bool isAlt()         const { return isAltPress;   };
    bool isShift()       const { return isShiftPress; };
    bool isZ()           const { return isZPress;     };
-   
+
    /*
    bool is()           const { return isPress;    };
    */
     // add key here
-    
-   void setMouseLoc(int x, int y){ 
+
+   void setMouseLoc(int x, int y){
       mouseLoc.first  = x;
       mouseLoc.second = y;
    }
@@ -107,11 +115,11 @@ public:
    std::pair<int, int> getMouseLoc() const {
     return mouseLoc;
    };
-  
-   
+
+
    static void *p;                   // for client
    static void (*callBack)(const Interface *, void *);
-   
+
 
 private:
    void initialize(int argc, char ** argv, const char * title);
