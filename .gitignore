@@ -41,8 +41,12 @@ _deps
 bin
 build
 freeglut
-CMake
+CMakeFiles
 .vscode
+SettingsLayout
+saves
+*.gdl
+*.pdf
 
 # I don't remember which is was
 src/Array.cpp

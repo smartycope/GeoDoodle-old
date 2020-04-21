@@ -1,0 +1,51 @@
+* Completed Features:
+ * added a button that shows all the keys and what they do (the menu)
+ * now hides the mouse when you press the arrow keys
+ * added a button that hides the metalines
+ * added an option to switch the 'c' key and the space key
+ * expanded and centered the dots array so it goes off screen better
+ * switched from a Point class to using std::pair for the coordinant system
+ * added saving (via serialization and deserialization)
+ * added saving to a pdf
+ * added instant repeating inside of the metabox (toggles with m)
+ * added the ability to change how much space is between the dots
+    - in settings
+ 
+
+* Bugs to Fix:
+ * fix the "d" key bug
+ * pdf saving 
+    - needs dynamic width and height
+    - still segfaulting
+    - upside down for some reason
+ * instant repeating inside the metabox is off
+ * undo with instant repeating lines that aren't ended doesn't work
+
+    
+* Suggested Features:
+ * consider moving the enter key to some other key 
+    - add to settings?
+ * fix it so when a line runs out of the original area, it cuts it
+    - add to settings
+ * add zooming in and out
+ * add a camera you can move around
+ * maybe have the repeater (somehow) recognize if it's a tesselation, and then have an x and a y setting pop up to specify the overlap.
+    - Perhaps have different kinds tesselation presets?
+ * allow screen resizing
+ * add mirroring
+    - 2x, 4x, 8x?
+ * add middle click button = X
+ * consider changing the name "GeoDoodle" to "The Tesselator"
+ * area selector with the mouse (specifically for an eraser)
+ * delete my own key repeater for the arrow keys so it will use OpenGl's
+ * add capability to use more (or less) than 4 enters to select and area
+ * add different shapes to repeat (repeat within a square, triangle, hexagon, etc.)
+    - add an option to choose which
+ * add lines showing the current progress of the enters area
+ * add different colors
+    - the ability to color in areas between lines
+    - be able to change line colors
+ * be able to end (and maybe start?) a line along a different line 
+    - use a modifier key to be able to do such
+ * add automatic dynamic tesselation repeating
+    - add an option to turn it on or off
