@@ -9,10 +9,9 @@
 #include <iostream>
 #include <string>
 #include <nlohmann/json.hpp>
+#include <debug.h>
 
-#define IS_DEBUG false
-
-// class Interface;
+#define DOTS_OFFSCREEN (int(settings["offscreen amount"]) * int(settings["dot spread"]))
 
 void sleep(unsigned long msSleep);
 void drawCallback();
@@ -28,9 +27,3 @@ int  getWindowHeight();
 bool isCloseEnough(int from, int to, int tolerance);
 nlohmann::json getSettings();
 void setSettings(nlohmann::json settings);
-
-void debug(const std::string &message, int line = -1);
-void debug(int line = -1);
-void debugVar(const std::string &varName, int var);
-void debugVar(const std::string &varName, std::pair<int, int> var);
-void debugVar(int var);

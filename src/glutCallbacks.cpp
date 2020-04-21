@@ -68,11 +68,11 @@ void drawCallback(){
    // Prepare the background buffer for drawing
    glClear(GL_COLOR_BUFFER_BIT); //clear the screen
    glColor3f(0,0,0);
-   
+
    //calls the client's display function
    assert(ui.callBack != NULL);
    ui.callBack(&ui, ui.p);
-   
+
    //loop until the timer runs out
    if (!ui.isTimeToDraw())
       sleep((unsigned long)((ui.getNextTick() - clock()) / 1000));
@@ -129,11 +129,13 @@ void keyboardCallback(unsigned char key, int x, int y){
 }
 
 void mouseCallback(int button, int state, int x, int y){
+    // debug("mouseCallback Called!");
    if(state == GLUT_DOWN){
-      Interface ui;
-      ui.keyEvent(button, true);
+        Interface ui;
+        ui.keyEvent(button, true);
       // the 200 is because this reads from the top left corner, but uiDraw.cpp writes from the center (i.e. where (0, 0) is)
-      ui.setMouseLoc(x - 200, -(y - 200)); // update this to use topLeft and bottomRight isntead
+        ui.setMouseLoc(x - getWindowWidth() / 2, -(y - getWindowHeight() / 2));
+        // ui.setMouseLoc(x, -y);
    }
 }
 
@@ -141,7 +143,8 @@ void mouseMotionCallback(int x, int y){
    Interface ui;
    ui.keyEvent(MOUSE_MOVES, true);
    // the 200 is because this reads from the top left corner, but uiDraw.cpp writes from the center (i.e. where (0, 0) is)
-   ui.setMouseLoc(x - 200, -(y - 200));
+   ui.setMouseLoc(x - getWindowWidth() / 2, -(y - getWindowHeight() / 2));
+    // ui.setMouseLoc(x, -y);
 }
 
 void setMouse(bool hidden){
@@ -154,7 +157,7 @@ int pixCount(bool metric){
     //           << "glut screen width: " << glutGet(GLUT_SCREEN_WIDTH) << ", "
     //           << "glut screen width mm: " << glutGet(GLUT_SCREEN_WIDTH_MM) << std::endl;
     // return 0;
-    assert(int(float(glutGet(GLUT_SCREEN_WIDTH_MM))  / float(glutGet(GLUT_SCREEN_WIDTH))) == 
+    assert(int(float(glutGet(GLUT_SCREEN_WIDTH_MM))  / float(glutGet(GLUT_SCREEN_WIDTH))) ==
            int(float(glutGet(GLUT_SCREEN_HEIGHT_MM)) / float(glutGet(GLUT_SCREEN_HEIGHT))));
     if(metric){
         return int(round(float(glutGet(GLUT_SCREEN_WIDTH_MM)) / float(glutGet(GLUT_SCREEN_WIDTH))));
@@ -191,48 +194,4 @@ nlohmann::json getSettings(){
 void setSettings(nlohmann::json setting){
     std::ofstream fout("../settings.json");
     fout << setting.dump(4);
-}
-
-int debugNum = 0;
-
-void debug(const std::string &message, int line){
-    // message.replace(0, 1, toupper(message.at(0)));
-    if (not IS_DEBUG)
-        return;
-
-    if (line >= 0)
-        std::cout << ++debugNum << ": " << message << " @ line " << line << std::endl;
-    else
-        std::cout << ++debugNum << ": " << message << std::endl;
-}
-
-void debug(int line){
-    if (not IS_DEBUG)
-        return;
-
-    if (line >= 0)
-        std::cout << ++debugNum << ": Line " << line << std::endl;
-    else
-        std::cout << ++debugNum << std::endl;
-}
-
-void debugVar(const std::string &varName, int var){
-    if (not IS_DEBUG)
-        return;
-
-    std::cout << ++debugNum << ": " << varName << " = " << var << std::endl;
-}
-
-void debugVar(const std::string &varName, std::pair<int, int> var){
-    if (not IS_DEBUG)
-        return;
-        
-    std::cout << ++debugNum << ": " << varName << " = " << var.first << ", " << var.second << std::endl;
-}
-
-void debugVar(int var){
-    if (not IS_DEBUG)
-        return;
-
-    std::cout << ++debugNum << ": "  << var << std::endl;
 }

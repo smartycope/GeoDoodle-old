@@ -5,31 +5,33 @@
 #include <fstream>
 #include "glutCallbacks.h"
 
-// #define DOT_SPREAD 16 // the distance between each dots - everything is easier if this is even.
-
 class Array{
+private:
+    // bool findCenter;
+
 protected:
     std::pair<int, int> focusLoc;
 
 public:
+    std::pair<int, int> centerDot;
     nlohmann::json settings;
-    
-     Array(){
+    bool findCenter;
+
+    Array(){
         settings = getSettings();
-        settings["dot spread"] = pixCount();
-        // focusLoc.first = (int)settings["dot spread"];
-        // focusLoc.second = (int)settings["dot spread"];
-        // debugVar("dot spread", settings["dot spread"]);
+        // settings["dot spread"] = pixCount();
+        // findCenter = true;
+        findCenter = false;
     }
 
     // Array(){
     //     settings = getSettings();
     //     settings["dot spread"] = pixCount();
     // }
-    
+
     void drawArray();
     void drawFocus(int radius);
-    
+
     void setFocus(std::pair<int, int> where){
         // if (where.first < 0)
         //     where.first = arraySize - 1;

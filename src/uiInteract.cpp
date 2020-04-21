@@ -8,7 +8,7 @@
  *     all the interfaces and events necessary to work with OpenGL.  Your
  *     program will interface with this thorough the callback function
  *     pointer towards the bottom of the file.
- *     -To add another key, ctrl+f for "add key here" in here, the 
+ *     -To add another key, ctrl+f for "add key here" in here, the
  *     header file, and game.cpp
  ************************************************************************/
 
@@ -147,6 +147,10 @@ void Interface::modKeyEvent(int key, bool fDown){
    }
 }
 
+void Interface::reshapeWindow(int width, int height){
+
+}
+
 void Interface::modKeyEvent(){
     isAltPress = false;
     isCtrlPress = false;
@@ -161,7 +165,7 @@ void Interface::modKeyEvent(){
  ****************************************************************/
 void Interface::keyEvent(){
    if (isDownPress)
-      isDownPress++;    
+      isDownPress++;
    if (isUpPress)
       isUpPress++;
    if (isLeftPress)
@@ -238,7 +242,7 @@ bool         Interface::isCPress     = false;
 bool         Interface::isXPress     = false;
 bool         Interface::isMouseClick = false;
 bool         Interface::isMouseRightClick = false;
-std::pair<int, int> Interface::mouseLoc; // (/* getSettings()["dot spread"] */ -1, /* getSettings()["dot spread"] */ -8);
+std::pair<int, int> Interface::mouseLoc;
 bool         Interface::isMouseMoving = false;
 bool         Interface::isBigXPress  = false;
 bool         Interface::isEnterPress = false;
@@ -275,10 +279,10 @@ void (*Interface::callBack)(const Interface *, void *) = NULL;
  *           argv:       The actual command-line parameters
  *           title:      The text for the titlebar of the window
  *************************************************************************/
-void Interface::initialize(int argc, char ** argv, const char * title){
+void Interface::initialize(int argc, char** argv, const char* title){
    if (initialized)
       return;
-   
+
    // set up the random number generator
    srand((unsigned int)time(NULL));
 
@@ -288,12 +292,12 @@ void Interface::initialize(int argc, char ** argv, const char * title){
 //    glutInitWindowSize(   // size of the window
 //       (bottomRight.first - topLeft.first),
 //       (topLeft.second - bottomRight.second));
-            
+
    glutInitWindowPosition(100, 100);                // initial position
    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);  // double buffering
    glutCreateWindow(title);              // text on titlebar
-   glutIgnoreKeyRepeat(false); // previously true
-   
+   glutIgnoreKeyRepeat(false);
+
    // set up the drawing style: B/W and 2D
    glClearColor(BACKGROUND_COLOR);          // set the background color
 //    gluOrtho2D(topLeft.first, bottomRight.first,
@@ -310,6 +314,7 @@ void Interface::initialize(int argc, char ** argv, const char * title){
     glutSpecialUpFunc( keyUpCallback   );
     glutMouseFunc(     mouseCallback   );
     glutPassiveMotionFunc( mouseMotionCallback );
+    glutReshapeFunc(   reshapeWindow   );
 
     initialized = true;
     return;
@@ -330,7 +335,7 @@ void Interface::run(void (*callBack)(const Interface *, void *), void *p) {
    // setup the callbacks
    this->p = p;
    this->callBack = callBack;
-   
+
    glutMainLoop();
 
    return;
