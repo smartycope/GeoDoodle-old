@@ -1,5 +1,7 @@
 import pygame, os, pickle
 from collections import namedtuple
+import pygame_menu
+from enum import Enum, auto
 
 #* THINGS TO ADD
 # fix the q/middle click bug
@@ -14,7 +16,6 @@ from collections import namedtuple
 # AttributeError: 'NoneType' object has no attribute 'finish'
 
 # add fancy repeating (with a menu)
-# add save overwrite checking
 # maybe add a failsafe in case it's fullscreen and everythings stopped
 # make shift home/end jump more
 # add icon
@@ -25,19 +26,25 @@ from collections import namedtuple
 # add half spacing with arrow keys
 # add mouse hiding
 # add an algorithm that randomly generates patterns
-# c + arrow keys is broken
 # add a redo function, and have it include erasing an entire pattern
 # add the ability to, when you push a button, end a line along another line, and have the focus reflect that
 # add colors (attached to keys? make a toolbar?)
-# s is attached to save AND down
 # add sharing?
+
+class menu(Enum):
+    OPTION   = auto()   
+    WELCOME  = auto()   
+    CONTROLS = auto()
+    TOOLBAR  = auto()   
+    REPEAT   = auto()   
+    SAVE     = auto()   
+    OPEN     = auto()
+
 
 os.system('clear')
 
 dir = os.path.dirname(__file__) + '/'
-savesFolder = dir + 'GeoDoodle Saves/'
-
-# Point = namedtuple('Point', ['x', 'y'])
+savesFolder = dir + 'saves/'
 
 FOCUS_RADIUS = 6
 DRAG_DELAY   = 12
@@ -110,6 +117,7 @@ class Game:
         #* Add SCALED back in when pygame gets updated to 2.0.0
         # pygame.OPENGL should also be in here, but it doesn't work for some reason.
         windowFlags = pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.RESIZABLE# | pygame.SCALED
+        self.openMenu = dict(zip(menu, [False] * len(menu)))
         self.gameDisplay = pygame.display.set_mode([winWidth, winHeight], windowFlags)
         self.clock = pygame.time.Clock()
         self.lines = list()
@@ -150,6 +158,40 @@ class Game:
 
     def updateFocus(self):
         self.focusLoc = Point(min(self.dots, key=lambda i:abs(i.x - self.mouseLoc.x)).x + 1, min(self.dots, key=lambda i:abs(i.y - self.mouseLoc.y)).y + 1)
+
+    def closeMenu(self, which):
+        self.openMenu[which] = False
+
+    def createMenu(self, type):
+        menuWidth  = 300
+        menuHeight = 400
+        menuPos = Point((self.winWidth / 2) - (menuWidth / 2), (self.winHeight / 2) - (menuHeight / 2))
+
+        # self.menuSurface = self.gameDisplay.subsurface(pygame.Rect(menuPos.data(), [menuWidth, menuHeight]))
+
+        self.menu = pygame_menu.Menu(menuHeight, menuWidth, type.name.title(), theme=pygame_menu.themes.THEME_BLUE)
+
+        if type == menu.OPTION:
+            pass
+        if type == menu.WELCOME:
+            pass
+        if type == menu.CONTROLS:
+            pass
+        if type == menu.TOOLBAR:
+            pass
+        if type == menu.REPEAT:
+            self.menu.add_text_input('', default='John Doe')
+            # self.menu.add_selector('Difficulty :', [('Hard', 1), ('Easy', 2)], onchange=set_difficulty)
+            # self.menu.add_button('Play', start_the_game)
+            # self.menu.add_button('Close', )
+            pygame_menu.widgets.Button('Close', menu.REPEAT, onreturn=self.closeMenu, widget_id='yomama')
+
+        if type == menu.SAVE:
+            pass
+        if type == menu.OPEN:
+            pass
+
+
 
     def run(self):
         run = True
@@ -199,10 +241,10 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 or \
                    (event.type == pygame.KEYDOWN and event.unicode == ' '):
                     if currentLine == None:
-                        print('current line is None, and im creating a new line at', self.focusLoc)
+                        # print('current line is None, and im creating a new line at', self.focusLoc)
                         currentLine = Line(Point(*self.focusLoc.data()))
                     else:
-                        print('current line is not None, and im enting the current line at', self.focusLoc)
+                        # print('current line is not None, and im enting the current line at', self.focusLoc)
                         currentLine.finish(Point(*self.focusLoc.data()))
                         self.lines.append(currentLine)
                         currentLine = None
@@ -211,11 +253,11 @@ class Game:
                 if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 3) or \
                    (event.type == pygame.KEYDOWN and event.key == pygame.K_c):
                     if currentLine == None:
-                        currentLine = Line(self.focusLoc)
+                        currentLine = Line(Point(*self.focusLoc.data()))
                     else:
-                        currentLine.finish(self.focusLoc)
+                        currentLine.finish(Point(*self.focusLoc.data()))
                         self.lines.append(currentLine)
-                        currentLine = Line(self.focusLoc)
+                        currentLine = Line(Point(*self.focusLoc.data()))
 
                 #* Middle mouse butten clicked or q is pressed
                 if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 2) or \
@@ -226,6 +268,7 @@ class Game:
                     currentLine = None
 
                 if event.type == pygame.KEYDOWN:
+                    print(event)
 
                     if event.key == pygame.K_ESCAPE: #* Esc
                         self.exit()
@@ -241,17 +284,31 @@ class Game:
                         elif currentLine != None:
                             currentLine = None
 
-                    if event.unicode == 's':
+                    if event.unicode in ['S', '\x13']: #* ctrl + s
                         if self.fullscreen == True:
                             pygame.display.toggle_fullscreen()
-                        pickle.dump(self.lines, open(savesFolder + input("What would you like this pattern to be saved as?\n") + '.gdl', "wb" ))
-                        print('File Saved!')
+
+                        filename = input("What would you like this pattern to be saved as?\n") + '.gdl'
+
+                        if not filename.lower() in ['cancel.gdl', 'q.gdl', 'quit.gdl']:
+                            if filename in os.listdir(savesFolder):
+                                if input('That file already exists. Do you want to overwrite it? (y/n)\n').lower() == 'y':
+                                    pickle.dump(self.lines, open(savesFolder + filename, "wb" ))
+                                    print('File Saved!')
+                            else:
+                                pickle.dump(self.lines, open(savesFolder + filename + '.gdl', "wb" ))
+                                print('File Saved!')
 
                     if event.unicode == 'o':
                         if self.fullscreen == True:
                             pygame.display.toggle_fullscreen()
-                        print(dict(enumerate(os.listdir(savesFolder))))
-                        self.lines = pickle.load(open(savesFolder + os.listdir(savesFolder)[int(input(f'Which file would you like to open? (0-{len(os.listdir(savesFolder)) - 1})\n'))], 'rb'))
+                        opts = dict(zip(range(1, len(os.listdir(savesFolder))), os.listdir(savesFolder)))
+                        opts[0] = 'Cancel'
+                        print(opts)
+                        ans = int(input(f'Which file would you like to open? (0-{len(os.listdir(savesFolder)) - 1})\n'))
+                        if ans:
+                            self.lines = pickle.load(open(savesFolder + os.listdir(savesFolder)[ans], 'rb'))
+                        # self.lines = pickle.load(open(savesFolder + os.listdir(savesFolder)[int(input(f'Which file would you like to open? (0-{len(os.listdir(savesFolder)) - 1})\n'))], 'rb'))
 
                     if event.unicode == 'Q':
                         self.lines = []
@@ -305,20 +362,33 @@ class Game:
                             currentLine.end = self.focusLoc
                         ignoreMouse = True
 
+                    if event.unicode == 'r':
+                        self.openMenu[menu.REPEAT] = True
+
+                    if event.unicode == 'm':
+                        x = (self.winWidth / self.dotSpread) / 2
+                        start = Point(x, 0)
+
+                        self.lines.append(Line(
                     # add key here
 
-                # print(event)
 
             self.drawFocus()
             self.drawLines()
-            if currentLine != None:
-                # print('running')
-                currentLine.draw(self.gameDisplay)
+            if currentLine != None: currentLine.draw(self.gameDisplay)
             self.drawDots()
+
+            # for m in list(self.openMenu):
+            #     if self.openMenu[m]:
+            #         self.createMenu(m)
+            #         self.menu.mainloop(self.gameDisplay, bgfun=self.drawBackground, fps_limit=FPS, disable_loop=False)
 
             
             pygame.display.update()
             self.clock.tick(self.fps)
+
+    def drawBackground(self):
+        self.gameDisplay.fill(self.background.color)
 
     def text_objects(self, text, font):
         textSurface = font.render(text, True, namedColor('black').color)
