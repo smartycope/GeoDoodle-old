@@ -1,10 +1,44 @@
 {
-    "dot spread": 17,
-    "focus radius": 5,
-    "is c repeat": true,
-    "key repeat speed": 9,
-    "number of enters": 4,
-    "offscreen amount": 3,
-    "start height": 400,
-    "start width": 400
+    "FPS": 45,
+    "backgroundColor": [
+        200,
+        160,
+        100
+    ],
+    "boundsCircleColor": [
+        78,
+        64,
+        64
+    ],
+    "boundsLineColor": [
+        103,
+        89,
+        86
+    ],
+    "defaultLineColor": [
+        0,
+        0,
+        0
+    ],
+    "dotColor": [
+        0,
+        0,
+        0
+    ],
+    "dotSize": 2,
+    "dotSpread": 52,
+    "dragDelay": 18,
+    "exportLineThickness": 2,
+    "focusColor": [
+        0,
+        0,
+        255
+    ],
+    "focusRadius": 6,
+    "iconFile": "icon3.png",
+    "keyRepeatDelay": 200,
+    "keyRepeatInterval": 20,
+    "lineThickness": 2,
+    "offScreenAmount": 10,
+    "themeFile": "theme_1.json"
 }

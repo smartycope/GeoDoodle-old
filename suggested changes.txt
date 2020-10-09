@@ -1,0 +1,69 @@
+* Bugs to Fix:
+   the q/middle click bug
+   make fullscreen work so it's using the better function
+   add a checker in home/end so that dot spread can't reach 0 (0r like, less than 5)
+   arrowkeys get out of sync with the dots if dotspread is changed without ignoreMouse moving
+   make lines scale with the dots
+   menu x button makes it so you can't reopen that menu
+   you have to press within the menu at least once to get it to recognize any button clicks
+   check if a line is identical to another line so it won't get double dark
+
+
+Features to extend:
+   add dynamic width and height to image saving
+   The gui can certainly be optimized a lot
+   add a dark theme option checkbox 
+   add the ability to exclude a specific line when repeating by erasing it in the repeat menu
+   add single horrizontal mirroring
+   undo (especially with mirroring) gets desynced easily. Make undo and redo tuples to hold all the previous actions?
+
+
+Features to add
+   have mouse scrolling change the line color
+   all the menus
+   hide the mouse when the ignoreMouse is true
+   add a setting to optionally have the mouse hidden all the time and only show the focus
+   add a metabox somehow?
+   add repeating
+      have a key specify the points, and have circles around the specified points
+   add the ability to color in areas inbetween the lines
+   
+
+
+ * maybe have the repeater (somehow) recognize if it's a tesselation, and then have an x and a y setting pop up to specify the overlap.
+    - Perhaps have different kinds tesselation presets?
+ * allow screen resizing
+ * add mirroring
+    - 2x, 4x, 8x?
+ * consider changing the name "GeoDoodle" to "The Tesselator"
+ * area selector with the mouse (specifically for an eraser)
+ * add capability to use more (or less) than 4 enters to select and area
+ * add different shapes to repeat (repeat within a square, triangle, hexagon, etc.)
+    - add an option to choose which
+ * add lines showing the current progress of the enters area
+ * add different colors
+    - the ability to color in areas between lines
+      - use a recursive function that reads pixels from the surface!
+    - be able to change line colors
+ * be able to end (and maybe start?) a line along a different line 
+    - use a modifier key to be able to do such
+ * add automatic dynamic tesselation repeating
+    - add an option to turn it on or off
+ * added a button that hides the metalines
+
+#* THINGS TO ADD
+    # add repeating
+    
+
+    add fancy repeating (with a menu)
+    maybe add a failsafe in case it's fullscreen and everythings stopped
+    add an options to make shift home/end jump more?
+    add mirroring (2x, 4, 6x, 8x...)
+    have lines scale with dotSpread
+    add settings menu gui
+    add half spacing with shift arrow keys
+    create an algorithm that randomly generates patterns
+    add a redo function, and have it include erasing an entire pattern
+    add the ability to, when you push a button, end a line along another line, and have the focus reflect that
+    add colors (attached to keys? make a toolbar?)
+    add sharing?
