@@ -1,5 +1,6 @@
 from Color import Color, namedColor
 from Point import Point
+from Geometry import *
 # from Globals import *
 import os, json
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -21,7 +22,7 @@ DIR = os.path.dirname(__file__) + '/'
 SAVES_FOLDER = DIR + 'saves/'
 GUI_THEME_FILE = DIR + 'data/myTheme.json'
 
-ARROW = '→'
+# ARROW = '→'
 
 with open(DIR + 'settings.json') as f:
     SETTINGS = json.load(f)
@@ -40,6 +41,7 @@ class menu(Enum):
     SAVE     = 5
     OPEN     = 6
     EXPORT   = 7
+
 
 # The semi-abstract class via which all the GUIs are made. Be careful when touching this.
 class Window(UIWindow):
@@ -71,6 +73,9 @@ class Window(UIWindow):
                             parent_element=self)
 
         self.menu = menu(uiManager, self.get_container())
+
+    def updateContextData(self, context):
+        self.menu.updateContextData(context)
 
     def process_event(self, event):
         # if not (event.type == pygame.USEREVENT and event.user_type == pygame_gui.UI_WINDOW_CLOSE):
@@ -217,40 +222,67 @@ class MenuManager:
 
 # All the different GUI classes
 PREVIEW_BACKGROUND_COLOR = [200, 160, 100]
-PREVIEW_EDGE_OFFSET = 50
+# PREVIEW_EDGE_OFFSET = 50
 PREVIEW_DOT_SPREAD = 16
 class RepeatMenu:
     def __init__(self, uiManager, container):
         self.size = container.get_size()
         self.uiManager = uiManager
+        self.pattern = None
 
         # Make a background surface for the gui
         self.background = pygame.Surface(self.size)
         self.background = self.background.convert()
         self.background.fill((30, 30, 30))
 
-        self.includeHalfsies = False
-        self.overlap = 0
+        self.halfsies = False
+        self.overlap = [0, 0]
 
-        textPos                    = [None, 20]
-        includeHalfsiesCheckboxPos = [(self.size[0] / 2) - 100, 60]
-        overlapSliderPos           = [None, 120]
-        createPatternButtonPos     = [None, 170]
+        row = self.size[1] / 20
+        textPos                    = [None,                     row]
+        includeHalfsiesCheckboxPos = [(self.size[0] / 2) - 100, row * 2.5]
+        xOverlapSliderPos          = [(self.size[0] / 2) - 205, row * 6]
+        yOverlapSliderPos          = [(self.size[0] / 2) + 25,  row * 6]
+        createPatternButtonPos     = [None,                     row * 8.5]
+        self.previewEdgeOffset     = self.size[1] / 20
 
         self.text = Text('Repeat Menu!', container, textPos)
-        self.includeHalfsiesCheckbox = CheckBox(includeHalfsiesCheckboxPos, self.uiManager, container, 'Include Halfsies', startValue=self.includeHalfsies)
-        self.overlapSlider = Slider(overlapSliderPos, uiManager, container, 'Overlap', startValue=self.overlap)
+        self.includeHalfsiesCheckbox = CheckBox(includeHalfsiesCheckboxPos, self.uiManager, container, 'Include Halfsies', startValue=self.halfsies)
+        self.xOverlapSlider = Slider(xOverlapSliderPos, uiManager, container, 'x Overlap', startValue=self.overlap[0], range=(-2, 2))
+        self.yOverlapSlider = Slider(yOverlapSliderPos, uiManager, container, 'y Overlap', startValue=self.overlap[1], range=(-2, 2))
         self.createPatternButton = Button(createPatternButtonPos, self.uiManager, container, 'Create!', print, ['Creating Pattern...'], [100, None])
+        self.previewStartY = (row * 8.5) + self.previewEdgeOffset + self.createPatternButton.height
 
         self.previewDots = self.genDotArray()
-        self.previewSurface = pygame.Surface(((self.size[0] - PREVIEW_EDGE_OFFSET * 2), self.size[1] / 2))
+        self.previewSurface = pygame.Surface(((self.size[0] - self.previewEdgeOffset * 6), 
+                                               self.size[1] - self.previewStartY - self.previewEdgeOffset))
         self.updatePreviewSurface()
 
     def updatePreviewSurface(self):
+        # Draw background
         self.previewSurface.fill(PREVIEW_BACKGROUND_COLOR)
 
+        # Draw the dots
         for i in self.previewDots:
-            pygame.draw.rect(self.previewSurface, SETTINGS['dotColor'], pygame.Rect(i.data(), [SETTINGS['dotSize'], SETTINGS['dotSize']]))
+            pygame.draw.rect(self.previewSurface, SETTINGS['dotColor'], pygame.Rect(i.data(),
+                             [SETTINGS['dotSize'], SETTINGS['dotSize']]))
+
+        # patternStartingPoint = self.previewDots[round(len(self.previewDots) / 2)]
+
+        # Draw the lines
+        if self.pattern is not None:
+            # print('drawing lines')
+            drawLines = scaleLines(repeatPattern(self.pattern, self.size, PREVIEW_DOT_SPREAD, self.previewDots[0],
+                                                 SETTINGS['offScreenAmount'], self.overlap, self.halfsies),
+                                   SETTINGS['dotSpread'], PREVIEW_DOT_SPREAD)
+
+            if drawLines is not None:
+                # print('len of drawlines =', len(drawLines))
+                for i in drawLines:
+                    i.draw(self.previewSurface)
+
+            # for l in self.pattern.getPatternAtLoc(patternStartingPoint, halfsies=self.halfsies):
+                # l.draw(self.previewSurface)
 
     def genDotArray(self):
         dots = []
@@ -261,19 +293,41 @@ class RepeatMenu:
         return dots
 
     def handleEvent(self, event):
-        self.includeHalfsiesCheckbox.handleEvent(event)
-        self.overlapSlider.handleEvent(event)
-        self.createPatternButton.handleEvent(event)
+        if self.includeHalfsiesCheckbox.handleEvent(event):
+            self.halfsies = not self.halfsies
+            self.updatePreviewSurface()
+
+        tmp = self.xOverlapSlider.handleEvent(event)
+        if tmp is not None:
+            self.overlap[0] = tmp
+            self.updatePreviewSurface()
+
+        tmp2 = self.yOverlapSlider.handleEvent(event)
+        if tmp2 is not None:
+            self.overlap[1] = tmp2
+            self.updatePreviewSurface()
+        
+        if self.createPatternButton.handleEvent(event):
+            # TODO Do cool stuff here (pass the pattern back to Game)
+            self.open = False
+            self.updatePreviewSurface()
 
     def draw(self, surface):
+        # print(f'length of pattern = {len(self.pattern.lines)}')
+        # self.updatePreviewSurface()
         self.text.draw(surface)
         self.includeHalfsiesCheckbox.draw(surface)
-        self.overlapSlider.draw(surface)
+        self.xOverlapSlider.draw(surface)
+        self.yOverlapSlider.draw(surface)
         self.createPatternButton.draw(surface)
-        surface.blit(self.previewSurface, (PREVIEW_EDGE_OFFSET, (self.size[1] / 2) - PREVIEW_EDGE_OFFSET))
+        surface.blit(self.previewSurface, (self.previewEdgeOffset * 3, self.previewStartY))
 
     def updateContextData(self, context):
-        self.pattern = context['pattern']
+        # Only update from Game once
+        if self.pattern is None:
+            # print(f'pattern = {self.pattern}')
+            self.pattern = context
+            self.updatePreviewSurface()
 
 class OptionMenu:
     def __init__(self, uiManager, container):
@@ -416,6 +470,7 @@ class WelcomeMenu:
 
 # All the different elements the GUIs can have. They're essentially my own wrappers for pygame_gui's UIElements,
 #   because they're poorly written (or at least, hard to interface with).
+#   HandleEvent()'s return True is something happened, and false if not (value and None in the case of Slider)
 class Button:
     def __init__(self, pos, uiManager, container, text, func, params = None, size=None):
         if size[0] is None:
@@ -444,10 +499,14 @@ class Button:
         self.button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(pos, (self.width, self.height)), text=text, manager=self.uiManager, container=container)
 
     def handleEvent(self, event):
-        if event.type == pygame.USEREVENT:
-            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element == self.button:
-                    self.func(*self.params)
+        if event.type == pygame.USEREVENT and \
+           event.user_type == pygame_gui.UI_BUTTON_PRESSED and \
+           event.ui_element == self.button:
+
+            self.func(*self.params)
+            return True
+        else:
+            return False
         
     def draw(self, surface):
         pass
@@ -484,7 +543,6 @@ class ColorPicker:
         self.color = None
         self.colorPicker = UIColourPickerDialog(pygame.Rect(160, 50, 420, 400), self.uiManager, window_title='Change Color...', initial_colour=initalColor)
     
-
     def handleEvent(self, event):
         if event.type == pygame.USEREVENT and event.user_type == pygame_gui.UI_COLOUR_PICKER_COLOUR_PICKED:
             self.color = event.colour
@@ -537,10 +595,14 @@ class CheckBox:
                                                    manager=self.uiManager, container=container, tool_tip_text=hoverText, allow_double_clicks=False)
 
     def handleEvent(self, event):
-        if event.type == pygame.USEREVENT:
-            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element == self.button:
-                    self.checked = not self.checked
+        if event.type == pygame.USEREVENT and \
+           event.user_type == pygame_gui.UI_BUTTON_PRESSED and \
+           event.ui_element == self.button:
+           
+            self.checked = not self.checked
+            return True
+        else:
+            return False
 
     def draw(self, surface):
         self.label.draw(surface)
@@ -575,11 +637,13 @@ class Slider:
         self.slider = UIHorizontalSlider(relative_rect=pygame.Rect(pos, (self.width, self.height)), start_value=startValue, value_range=range, manager=uiManager, container=container)
 
     def handleEvent(self, event):
-        pass
-        # if event.type == pygame.USEREVENT:
-        #     if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-        #         if event.ui_element == self.button:
-        #             self.func(*self.params)
+        if event.type == pygame.USEREVENT and \
+           event.user_type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED and \
+           event.ui_element == self.slider:
+
+            return event.value
+        else:
+            return None
 
     def draw(self, surface):
         self.value = self.slider.get_current_value()
@@ -589,12 +653,6 @@ class Slider:
 
         # self.valueLabel.draw(surface)
         self.label.draw(surface)
-
-
-
-
-
-
 
 
 
@@ -649,330 +707,3 @@ class Slider:
 
 
 ###################################################################################################
-
-
-
-'''
-
-class PongWindow(UIWindow):
-    def __init__(self, position, ui_manager):
-        super().__init__(pygame.Rect(position, (320, 240)), ui_manager,
-                         window_display_title='Super Awesome Pong!',
-                         object_id='#pong_window')
-
-        game_surface_size = self.get_container().get_size()
-        self.game_surface_element = UIImage(pygame.Rect((0, 0),
-                                                        game_surface_size),
-                                            pygame.Surface(game_surface_size).convert(),
-                                            manager=ui_manager,
-                                            container=self,
-                                            parent_element=self)
-
-        self.pong_game = PongGame(game_surface_size)
-
-        self.is_active = False
-
-    def process_event(self, event):
-        handled = super().process_event(event)
-        if (event.type == pygame.USEREVENT and
-                event.user_type == pygame_gui.UI_BUTTON_PRESSED and
-                event.ui_object_id == "#pong_window.#title_bar" and
-                event.ui_element == self.title_bar):
-            handled = True
-            event_data = {'user_type': 'pong_window_selected',
-                          'ui_element': self,
-                          'ui_object_id': self.most_specific_combined_id}
-            window_selected_event = pygame.event.Event(pygame.USEREVENT,
-                                                       event_data)
-            pygame.event.post(window_selected_event)
-        if self.is_active:
-            handled = self.pong_game.process_event(event)
-        return handled
-
-    def update(self, time_delta):
-        if self.alive() and self.is_active:
-            self.pong_game.update(time_delta)
-
-        super().update(time_delta)
-
-        self.pong_game.draw(self.game_surface_element.image)
-
-
-class MiniGamesApp:
-    def __init__(self):
-        pygame.init()
-
-        self.root_window_surface = pygame.display.set_mode((1024, 600))
-
-        self.background_surface = pygame.Surface((1024, 600)).convert()
-        self.background_surface.fill(pygame.Color('#505050'))
-        self.ui_manager = UIManager((1024, 600), 'data/themes/theme_3.json')
-        self.clock = pygame.time.Clock()
-        self.is_running = True
-
-        self.pong_window_1 = PongWindow((25, 25), self.ui_manager)
-        self.pong_window_2 = PongWindow((50, 50), self.ui_manager)
-
-    def run(self):
-        while self.is_running:
-            time_delta = self.clock.tick(60)/1000.0
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.is_running = False
-
-                self.ui_manager.process_events(event)
-
-                if event.type == pygame.USEREVENT and event.user_type == 'pong_window_selected':
-                    event.ui_element.is_active = True
-                    if event.ui_element == self.pong_window_1:
-                        self.pong_window_2.is_active = False
-                    elif event.ui_element == self.pong_window_2:
-                        self.pong_window_1.is_active = False
-
-            self.ui_manager.update(time_delta)
-
-            self.root_window_surface.blit(self.background_surface, (0, 0))
-            self.ui_manager.draw_ui(self.root_window_surface)
-
-            pygame.display.update()
-
-
-class ControlScheme:
-    def __init__(self):
-        self.up = pygame.K_UP
-        self.down = pygame.K_DOWN
-
-
-class PongGame:
-    def __init__(self, size):
-        self.size = size
-        self.background = pygame.Surface(size)  # make a background surface
-        self.background = self.background.convert()
-        self.background.fill((0, 0, 0))
-
-        font = pygame.font.Font(None, 24)
-
-        self.score = Score(font)
-
-        self.walls = [Wall((5, 5), (size[0] - 10, 10)),
-                      Wall((5, size[1] - 10), (size[0] - 10, size[1] - 5))]
-
-        self.bats = []
-
-        control_scheme_1 = ControlScheme()
-        control_scheme_1.up = pygame.K_w
-        control_scheme_1.down = pygame.K_s
-
-        control_scheme_2 = ControlScheme()
-        control_scheme_2.up = pygame.K_UP
-        control_scheme_2.down = pygame.K_DOWN
-
-        self.bats.append(Bat((5, int(size[1]/2)), control_scheme_1, self.size))
-        self.bats.append(Bat((size[0] - 10, int(size[1]/2)), control_scheme_2, self.size))
-
-        self.ball = Ball((int(size[0]/2), int(size[1]/2)))
-
-    def process_event(self, event):
-        for bat in self.bats:
-            bat.process_event(event)
-
-    def update(self, time_delta):
-        for bat in self.bats:
-            bat.update(time_delta)
-
-        self.ball.update(time_delta, self.bats, self.walls)
-
-        if self.ball.position[0] < 0:
-            self.ball.reset()
-            self.score.increase_player_2_score()
-        elif self.ball.position[0] > self.size[0]:
-            self.ball.reset()
-            self.score.increase_player_1_score()
-
-    def draw(self, surface):
-        surface.blit(self.background, (0, 0))
-
-        for wall in self.walls:
-            wall.render(surface)
-
-        for bat in self.bats:
-            bat.render(surface)
-
-        self.ball.render(surface)
-        self.score.render(surface, self.size)
-
-
-class Bat:
-    def __init__(self, start_pos, control_scheme, court_size):
-        self.control_scheme = control_scheme
-        self.move_up = False
-        self.move_down = False
-        self.move_speed = 450.0
-
-        self.court_size = court_size
-
-        self.length = 30.0
-        self.width = 5.0
-
-        self.position = [float(start_pos[0]), float(start_pos[1])]
-        
-        self.rect = pygame.Rect((start_pos[0], start_pos[1]), (self.width, self.length))
-        self.colour = pygame.Color("#FFFFFF")
-
-    def process_event(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == self.control_scheme.up:
-                self.move_up = True
-            if event.key == self.control_scheme.down:
-                self.move_down = True
-
-        if event.type == pygame.KEYUP:
-            if event.key == self.control_scheme.up:
-                self.move_up = False
-            if event.key == self.control_scheme.down:
-                self.move_down = False
-
-    def update(self, dt):
-        if self.move_up:
-            self.position[1] -= dt * self.move_speed
-
-            if self.position[1] < 10.0:
-                self.position[1] = 10.0
-
-            self.rect.y = self.position[1]
-                
-        if self.move_down:
-            self.position[1] += dt * self.move_speed
-
-            if self.position[1] > self.court_size[1] - self.length - 10:
-                self.position[1] = self.court_size[1] - self.length - 10
-
-            self.rect.y = self.position[1]
-
-    def render(self, screen):
-        pygame.draw.rect(screen, self.colour, self.rect)
-
-
-class Wall:
-    def __init__(self, top_left, bottom_right):
-        self.rect = pygame.Rect(top_left, (bottom_right[0] - top_left[0], bottom_right[1] - top_left[1]))
-        self.colour = pygame.Color("#C8C8C8")
-
-    def render(self, screen):
-        pygame.draw.rect(screen, self.colour, self.rect)
-
-
-class Ball:
-    def __init__(self, start_position):
-        self.rect = pygame.Rect(start_position, (5, 5))
-        self.colour = pygame.Color(255, 255, 255)
-        self.position = [float(start_position[0]), float(start_position[1])]
-        self.start_position = [self.position[0], self.position[1]]
-        self.ball_speed = 120.0
-        self.max_bat_bounce_angle = 5.0 * math.pi/12.0
-        self.collided = False
-
-        self.velocity = [0.0, 0.0]
-        self.create_random_start_vector()
-
-    def render(self, screen):
-        pygame.draw.rect(screen, self.colour, self.rect)
-
-    def create_random_start_vector(self):
-        y_random = random.uniform(-0.5, 0.5)
-        x_random = 1.0 - abs(y_random)
-        if random.randint(0, 1) == 1:
-            x_random = x_random * -1.0
-        self.velocity = [x_random * self.ball_speed, y_random * self.ball_speed]
-
-    def reset(self):
-        self.position = [self.start_position[0], self.start_position[1]]
-        self.create_random_start_vector()
-
-    def update(self, dt, bats, walls):
-        self.position[0] += self.velocity[0] * dt
-        self.position[1] += self.velocity[1] * dt
-        self.rect.x = self.position[0]
-        self.rect.y = self.position[1]
-
-        collided_this_frame = False
-        for wall in walls:
-            if self.rect.colliderect(wall.rect):
-                collided_this_frame = True
-                if not self.collided:
-                    self.collided = True
-                    self.velocity[1] = self.velocity[1] * -1
-
-        for bat in bats:
-            if self.rect.colliderect(bat.rect):
-                collided_this_frame = True
-                if not self.collided:
-                    self.collided = True
-                    bat_y_centre = bat.position[1] + (bat.length/2)
-                    ball_y_centre = self.position[1] + 5
-                    relative_intersect_y = bat_y_centre - ball_y_centre  # should be in 'bat space' between -50 and +50
-                    normalized_relative_intersect_y = relative_intersect_y/(bat.length/2)
-                    bounce_angle = normalized_relative_intersect_y * self.max_bat_bounce_angle
-
-                    self.velocity[0] = self.velocity[0] * -1
-                    self.velocity[1] = self.ball_speed * -math.sin(bounce_angle)
-
-        if not collided_this_frame:
-            self.collided = False
-
-
-class Score:
-    def __init__(self, font):
-        self.player_1_score = 0
-        self.player_2_score = 0
-        self.font = font
-
-        self.score_string = None
-        self.score_text_render = None
-
-        self.update_score_text()
-
-    def update_score_text(self):
-        self.score_string = str(self.player_1_score) + " - " + str(self.player_2_score)
-        self.score_text_render = self.font.render(self.score_string, True, pygame.Color(200, 200, 200))
-
-    def render(self, screen, size):
-        screen.blit(self.score_text_render, self.score_text_render.get_rect(centerx=size[0]/2,
-                                                                            centery=size[1]/10))
-
-    def increase_player_1_score(self):
-        self.player_1_score += 1
-        self.update_score_text()
-
-    def increase_player_2_score(self):
-        self.player_2_score += 1
-        self.update_score_text()
-'''
-
-
-'''
-    if self.type == menu.OPTION:
-        pass
-
-    if self.type == menu.WELCOME:
-        pass
-
-    if self.type == menu.CONTROLS:
-        pass
-
-    if self.type == menu.TOOLBAR:
-        pass
-
-    if self.type == menu.REPEAT:
-        pass
-
-    if self.type == menu.SAVE:
-        pass
-
-    if self.type == menu.OPEN:
-        pass
-
-    if self.type == menu.EXPORT:
-        pass
-'''

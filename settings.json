@@ -1,5 +1,5 @@
 {
-    "FPS": 45,
+    "FPS": 30,
     "backgroundColor": [
         200,
         160,
@@ -26,7 +26,7 @@
         0
     ],
     "dotSize": 2,
-    "dotSpread": 52,
+    "dotSpread": 16,
     "dragDelay": 18,
     "exportLineThickness": 2,
     "focusColor": [

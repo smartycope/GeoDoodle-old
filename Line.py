@@ -29,3 +29,6 @@ class Line:
     def draw(self, display):
         pygame.draw.aaline(display, self.color, self.start.data(), self.end.data())
         # pygame.draw.line(display, self.color, self.start.data(), self.end.data(), width=self._width)
+
+    def __str__(self):
+        return f'[{self.start}, {self.end}]'

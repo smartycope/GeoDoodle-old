@@ -1,6 +1,7 @@
 from Color import Color, namedColor
 from Point import Point
 from Pattern import Pattern
+from Geometry import *
 # from Gui import RepeatGui, menu
 from Gui import MenuManager, menu
 from Line import Line
@@ -32,7 +33,7 @@ class Game:
             except FileNotFoundError:
                 print('Can\'t open file.')
                 exit(0)
-        else:   
+        else:
             self.lines = []
 
 
@@ -61,7 +62,8 @@ class Game:
         self.openMenu = dict(zip(menu, [False] * len(menu)))
 
         self.metaLines = []
-        self.dots = self.genDotArrayPoints(Point(self.settings['dotSpread'] / 2, self.settings['dotSpread'] / 2))
+        self.startingPoint = Point(self.settings['dotSpread'] / 2, self.settings['dotSpread'] / 2)
+        self.dots = self.genDotArrayPoints(self.startingPoint)
         self.mouseLoc   = Point(*pygame.mouse.get_pos())
         self.focusLoc   = Point()
 
@@ -114,25 +116,6 @@ class Game:
         if type == menu.OPEN:
             pass
 
-    def getLargestRect(self, points):
-        tmpX = sorted(points, key=lambda p: p.x)
-        tmpY = sorted(points, key=lambda p: p.y)
-
-        highest = tmpY[-1].y
-        lowest  = tmpY[0].y
-        left    = tmpX[-1].x
-        right   = tmpX[0].x
-
-        tmp = pygame.Rect(left, highest, right - left, lowest - highest)
-        tmp.normalize()
-        return tmp
-
-    def drawRect(self, rect, color):
-        pygame.draw.line(self.mainSurface, color, rect.topleft,     rect.topright)
-        pygame.draw.line(self.mainSurface, color, rect.topright,    rect.bottomright)
-        pygame.draw.line(self.mainSurface, color, rect.bottomright, rect.bottomleft)
-        pygame.draw.line(self.mainSurface, color, rect.bottomleft,  rect.topleft)
-
     def run(self):
         run = True
         currentLine = None
@@ -154,7 +137,7 @@ class Game:
         # contexts[menu.REPEAT]['pattern'] = [Line()]
 
         while run:
-            deltaTime = self.clock.tick(self.settings['FPS']) / 1000.0 
+            deltaTime = self.clock.tick(self.settings['FPS']) / 1000.0
 
             if not ignoreMouse:
                 self.updateMouse()
@@ -166,8 +149,8 @@ class Game:
             for i in boundsCircles:
                 pygame.draw.circle(self.mainSurface, self.settings['boundsCircleColor'], i.data(), self.settings['focusRadius'], 1)
                 if len(boundsCircles) > 1:
-                    bounds = self.getLargestRect(boundsCircles)                    
-                    self.drawRect(bounds, self.settings['boundsLineColor'])
+                    bounds = getLargestRect(boundsCircles)                    
+                    drawRect(self.mainSurface, bounds, self.settings['boundsLineColor'])
 
             for event in pygame.event.get():
 
@@ -185,6 +168,12 @@ class Game:
                         print('Saving Settings')
                         with open(DIR + 'settings.json', 'w') as file:
                             json.dump(self.settings, file, sort_keys=True, indent=4, separators=(",", ": "))
+                        
+                        scaleLines_ip(self.lines, prevSettings['dotSpread'], self.settings['dotSpread'])
+                        scaleLines_ip(self.metaLines, prevSettings['dotSpread'], self.settings['dotSpread'])
+                        # scaleLines_ip(self.)
+                        # print(self.lines[0])
+
                         prevSettings = {**self.settings}
 
                     # Debugging
@@ -398,33 +387,23 @@ class Game:
                             if len(boundsCircles) > 1:
                                 patternLines = []
                                 halfLines = []
-                                bounds = self.getLargestRect(boundsCircles)
-                                bounds.inflate_ip(self.settings['dotSpread'] * 2, self.settings['dotSpread'] * 2)
+                                bounds = getLargestRect(boundsCircles)
+                                #* Because the collidePoint function returns True if a line is touching 
+                                #*  the left or top, but not the bottom or right, we have to inflate the
+                                #*  rectangle and then move it so it's positioned correctly
+                                bounds.inflate_ip(self.settings['dotSpread'], self.settings['dotSpread'])
+                                bounds.move_ip(self.settings['dotSpread'] / 2, self.settings['dotSpread'] / 2)
 
+                                #* Get all the lines that are in the bounds, and the halfway in lines seperately
                                 for l in self.lines:
                                     if bounds.collidepoint(l.start.data()) and bounds.collidepoint(l.end.data()):
                                         patternLines.append(l)
                                     elif bounds.collidepoint(l.start.data()) or bounds.collidepoint(l.end.data()):
                                         halfLines.append(l)
 
-                                pattern = Pattern(patternLines, halfLines)
-                                tmp = pattern.getPatternAtLoc(Point(50, 50), halfsies=True)
-                                [print(i.start, i.end) for i in tmp]
+                                contexts[menu.REPEAT] = Pattern(patternLines, halfLines, bounds, self.settings['dotSpread'])
 
-                                self.lines += tmp
-
-                                #     print(f'start = {l.start)
-                                #     print(f'end = {l.end}')
-
-
-                                # print(f'bounds = {bounds}')
-                                # print(f'pattern lines len = {len(patternLines)}')
-                                # print(f'half lines len = {len(halfLines)}')
-
-
-
-                        # self.openMenu[menu.REPEAT] = not self.openMenu[menu.REPEAT]
-
+                                self.openMenu[menu.REPEAT] = not self.openMenu[menu.REPEAT]
                     if event.unicode == 'o':
                         # self.menus['repeat'].open = not self.menus['repeat'].open
                         self.openMenu[menu.OPTION] = not self.openMenu[menu.OPTION]

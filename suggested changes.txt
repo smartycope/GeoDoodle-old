@@ -5,8 +5,9 @@
    arrowkeys get out of sync with the dots if dotspread is changed without ignoreMouse moving
    make lines scale with the dots
    menu x button makes it so you can't reopen that menu
-   you have to press within the menu at least once to get it to recognize any button clicks
+   you have to press within the menu at least once to get it to recognize any button clicks -- hack fixed
    check if a line is identical to another line so it won't get double dark
+   b (bounds key) doesn't set properly when using only arrow keys
 
 
 Features to extend:
@@ -16,6 +17,9 @@ Features to extend:
    add the ability to exclude a specific line when repeating by erasing it in the repeat menu
    add single horrizontal mirroring
    undo (especially with mirroring) gets desynced easily. Make undo and redo tuples to hold all the previous actions?
+   make the GUI element positions relative to the size of the window, but have them cap off at a certain value
+   add a button that saves the previewed pattern in the repeat GUI without having to leave the menu
+   anti-alias exported images
 
 
 Features to add
