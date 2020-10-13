@@ -2,7 +2,7 @@ from Color import Color, namedColor
 from Point import Point
 import pygame, json
 
-import os; DIR = os.path.dirname(__file__) + '/'
+import os; DIR = os.path.dirname(__file__) + '/../'
 
 class Line:
     def __init__(self, start, end = None, color = None):
@@ -32,3 +32,9 @@ class Line:
 
     def __str__(self):
         return f'[{self.start}, {self.end}]'
+
+    def __eq__(self, a):
+        try:
+            return self.start == a.start and self.end == a.end
+        except:
+            return False

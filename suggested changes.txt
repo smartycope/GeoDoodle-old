@@ -8,6 +8,11 @@
    you have to press within the menu at least once to get it to recognize any button clicks -- hack fixed
    check if a line is identical to another line so it won't get double dark
    b (bounds key) doesn't set properly when using only arrow keys
+   the preview pattern in the repeat menu doesn't get the x/yAmount based on the offset
+   if you save a pattern and open it later in a bigger window, it's not going to be big enough
+   fix the sliders so when you press their left or right buttons, they only move one value (or a parameterized value)
+        (maybe catch the event and process it myself by calling the 'set value' function?)
+    switch the labels in the ui element classes to use uilabels instead of uitextboxes.
 
 
 Features to extend:
@@ -20,9 +25,11 @@ Features to extend:
    make the GUI element positions relative to the size of the window, but have them cap off at a certain value
    add a button that saves the previewed pattern in the repeat GUI without having to leave the menu
    anti-alias exported images
+   add a "keep original pattern" button to the repeat gui
 
 
 Features to add
+    add zooming in
    have mouse scrolling change the line color
    all the menus
    hide the mouse when the ignoreMouse is true
@@ -31,6 +38,8 @@ Features to add
    add repeating
       have a key specify the points, and have circles around the specified points
    add the ability to color in areas inbetween the lines
+   add copy and paste functionality (select with the bounds box maybe?)
+   add an option that lets you put a picture as the background?
    
 
 

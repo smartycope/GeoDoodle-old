@@ -26,8 +26,8 @@
         0
     ],
     "dotSize": 2,
-    "dotSpread": 16,
-    "dragDelay": 18,
+    "dotSpread": 25,
+    "dragDelay": 17,
     "exportLineThickness": 2,
     "focusColor": [
         0,
@@ -36,9 +36,13 @@
     ],
     "focusRadius": 6,
     "iconFile": "icon3.png",
+    "imageSaveLoc": "saves/",
+    "imageSavesLoc": "saves/",
     "keyRepeatDelay": 200,
     "keyRepeatInterval": 20,
     "lineThickness": 2,
-    "offScreenAmount": 10,
+    "offScreenAmount": 2,
+    "saveLoc": "saves/",
+    "savesLoc": "saves/",
     "themeFile": "theme_1.json"
 }

@@ -6,14 +6,13 @@ from Geometry import *
 from Gui import MenuManager, menu
 from Line import Line
 
-from Globals import *
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame, pygame_gui, pickle, sys
 from PIL import Image, ImageDraw, ImageColor
 import json
 
-DIR = os.path.dirname(__file__) + '/'
+DIR = os.path.dirname(__file__) + '/../'
 SAVES_FOLDER = DIR + 'saves/'
 
 class Game:
@@ -51,8 +50,10 @@ class Game:
         # pygame.OPENGL should also be in here, but it doesn't work for some reason.
         windowFlags = pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.RESIZABLE# | pygame.SCALED
 
-        self.winWidth   = winWidth
-        self.winHeight  = winHeight
+        # TODO phase winWidth and winHeight out in favor of size
+        self.winWidth  = winWidth
+        self.winHeight = winHeight
+        self.size = (winWidth, winHeight)
 
         #* Pygame data members
         self.mainSurface = pygame.display.set_mode([winWidth, winHeight], windowFlags)
@@ -61,24 +62,18 @@ class Game:
         #* Set up the GUIs
         self.openMenu = dict(zip(menu, [False] * len(menu)))
 
+        self.offScreenAmount = self.settings['offScreenAmount'] * self.settings['dotSpread']
         self.metaLines = []
-        self.startingPoint = Point(self.settings['dotSpread'] / 2, self.settings['dotSpread'] / 2)
-        self.dots = self.genDotArrayPoints(self.startingPoint)
-        self.mouseLoc   = Point(*pygame.mouse.get_pos())
-        self.focusLoc   = Point()
+        self.startingPoint = Point(self.size[0] / 2, self.size[1] / 2)
+        self.dots = genDotArrayPoints(self.size, self.settings['offScreenAmount'], self.settings['dotSpread'])
+        self.mouseLoc = Point(*pygame.mouse.get_pos())
+        self.focusLoc = Point()
 
     def drawLines(self):
         for line in self.lines:
             line.draw(self.mainSurface)
         for line in self.metaLines:
             line.draw(self.mainSurface)
-
-    def genDotArrayPoints(self, startingPoint = Point(0, 0)):
-        dots = []
-        for x in range(int((self.winWidth + (self.settings['offScreenAmount'] * 2)) / self.settings['dotSpread'])):
-            for y in range(int((self.winHeight + (self.settings['offScreenAmount'] * 2)) / self.settings['dotSpread'])):
-                dots.append(Point((x * self.settings['dotSpread'])+ startingPoint.x - self.settings['offScreenAmount'], (y * self.settings['dotSpread']) + startingPoint.y - self.settings['offScreenAmount']))
-        return dots
 
     def drawDots(self):
         for i in self.dots:
@@ -93,28 +88,30 @@ class Game:
     def updateFocus(self):
         self.focusLoc = Point(min(self.dots, key=lambda i:abs(i.x - self.mouseLoc.x)).x + 1, min(self.dots, key=lambda i:abs(i.y - self.mouseLoc.y)).y + 1)
 
-    def closeMenu(self, which):
-        self.openMenu[which] = False
+    def getLinesWithinRect(self, bounds):
+        ''' bounds is a pygame.Rect '''
 
-    def createMenu(self, type):
-        menuWidth  = 300
-        menuHeight = 400
-        menuPos = Point((self.winWidth / 2) - (menuWidth / 2), (self.winHeight / 2) - (menuHeight / 2))
+        patternLines = []
+        halfLines = []
+        patternLineIndecies = []
+        halfLineIndecies = []
 
-        if type == menu.OPTION:
-            pass
-        if type == menu.WELCOME:
-            pass
-        if type == menu.CONTROLS:
-            pass
-        if type == menu.TOOLBAR:
-            pass
-        if type == menu.REPEAT:
-            pass
-        if type == menu.SAVE:
-            pass
-        if type == menu.OPEN:
-            pass
+        #* Because the collidePoint function returns True if a line is touching 
+        #*  the left or top, but not the bottom or right, we have to inflate the
+        #*  rectangle and then move it so it's positioned correctly
+        incBounds = bounds.inflate(self.settings['dotSpread'], self.settings['dotSpread'])
+        incBounds.move_ip(self.settings['dotSpread'] / 2, self.settings['dotSpread'] / 2)
+
+        #* Get all the lines that are in the incBounds, and the halfway in lines seperately
+        for index, l in enumerate(self.lines):
+            if incBounds.collidepoint(l.start.data()) and incBounds.collidepoint(l.end.data()):
+                patternLines.append(l)
+                patternLineIndecies.append(index)
+            elif incBounds.collidepoint(l.start.data()) or incBounds.collidepoint(l.end.data()):
+                halfLines.append(l)
+                halfLineIndecies.append(index)
+
+        return [patternLines, halfLines, patternLineIndecies, halfLineIndecies]
 
     def run(self):
         run = True
@@ -132,9 +129,7 @@ class Game:
         # The menu specific data each menu needs to work properly
         contexts = dict(zip(menu, [None] * len(menu)))
         boundsCircles = []
-
-        #! This will not stay here
-        # contexts[menu.REPEAT]['pattern'] = [Line()]
+        dataFromGui = dict(zip(menu, [None] * len(menu)))
 
         while run:
             deltaTime = self.clock.tick(self.settings['FPS']) / 1000.0
@@ -157,7 +152,7 @@ class Game:
                 #* Check if any menus are open
                 menuOpen = False
                 for gui in list(self.openMenu):
-                    if gui != menu.TOOLBAR and self.openMenu[gui]:
+                    if self.openMenu[gui]:
                         menuOpen = True
 
                 #* Save the settings file if it changed 
@@ -169,9 +164,8 @@ class Game:
                         with open(DIR + 'settings.json', 'w') as file:
                             json.dump(self.settings, file, sort_keys=True, indent=4, separators=(",", ": "))
                         
-                        scaleLines_ip(self.lines, prevSettings['dotSpread'], self.settings['dotSpread'])
-                        scaleLines_ip(self.metaLines, prevSettings['dotSpread'], self.settings['dotSpread'])
-                        # scaleLines_ip(self.)
+                        scaleLines_ip(self.lines, self.startingPoint,  prevSettings['dotSpread'], self.settings['dotSpread'])
+                        scaleLines_ip(self.metaLines, self.startingPoint,  prevSettings['dotSpread'], self.settings['dotSpread'])
                         # print(self.lines[0])
 
                         prevSettings = {**self.settings}
@@ -181,6 +175,8 @@ class Game:
                         # print(event)
                         pass
                     # print(event)
+                    # print('contexts:', contexts)
+                    # print(self.focusLoc)
 
                 #* Exit the window
                 if event.type == pygame.QUIT: # or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE)
@@ -292,16 +288,20 @@ class Game:
                             # self.lines = pickle.load(open(SAVES_FOLDER + os.listdir(SAVES_FOLDER)[int(input(f'Which file would you like to open? (0-{len(os.listdir(SAVES_FOLDER)) - 1})\n'))], 'rb'))
                         if event.unicode == 'Q':
                             self.lines = []
-                            boundsLines = []
                             boundsCircles = []
                             lineBuffer = []
                             currentLine = None
+                            for m in list(contexts):
+                                contexts[m] = None
+                            for g in self.openMenu:
+                                g = False
+                                
                         if event.key == 264 or event.key == pygame.K_HOME: # numpad up
                             self.settings['dotSpread'] += 1
-                            self.dots = self.genDotArrayPoints(Point(self.settings['dotSpread'] / 2, self.settings['dotSpread'] / 2))
+                            self.dots = genDotArrayPoints(self.size, self.settings['offScreenAmount'], self.settings['dotSpread'])
                         if event.key == 258 or event.key == pygame.K_END: # numpad down
                             self.settings['dotSpread'] -= 1
-                            self.dots = self.genDotArrayPoints(Point(self.settings['dotSpread'] / 2, self.settings['dotSpread'] / 2))
+                            self.dots = genDotArrayPoints(self.size, self.settings['offScreenAmount'], self.settings['dotSpread'])
                         if event.unicode == 'e':
                             # If there's nothing there, don't do anything
                             if self.focusLoc in [i.end for i in self.lines] + [i.start for i in self.lines]:
@@ -358,13 +358,13 @@ class Game:
                             center = Point(min(self.dots, key=lambda i:abs(i.x - (self.winWidth / 2))).x + 1, min(self.dots, key=lambda i:abs(i.y - (self.winHeight / 2))).y + 1)
 
                             if mirroringStates[currentMirrorState] >= 2:
-                                startv = Point(center.x, -self.settings['offScreenAmount'])
-                                endv   = Point(center.x, self.winHeight + self.settings['offScreenAmount'])
+                                startv = Point(center.x, -self.offScreenAmount)
+                                endv   = Point(center.x, self.winHeight + self.offScreenAmount)
                                 self.metaLines.append(Line(startv, endv, mirrorLineColor))
                                 
                                 if mirroringStates[currentMirrorState] >= 4:
-                                    starth = Point(-self.settings['offScreenAmount'], center.y)
-                                    endh   = Point(self.winWidth + self.settings['offScreenAmount'], center.y)
+                                    starth = Point(-self.offScreenAmount, center.y)
+                                    endh   = Point(self.winWidth + self.offScreenAmount, center.y)
                                     self.metaLines.append(Line(starth, endh, mirrorLineColor))
                         if event.unicode == 'b':
                             boundsCircles.append(self.focusLoc)
@@ -385,27 +385,25 @@ class Game:
                     if event.unicode == 'r':
                         if not menuOpen:
                             if len(boundsCircles) > 1:
-                                patternLines = []
-                                halfLines = []
                                 bounds = getLargestRect(boundsCircles)
-                                #* Because the collidePoint function returns True if a line is touching 
-                                #*  the left or top, but not the bottom or right, we have to inflate the
-                                #*  rectangle and then move it so it's positioned correctly
-                                bounds.inflate_ip(self.settings['dotSpread'], self.settings['dotSpread'])
-                                bounds.move_ip(self.settings['dotSpread'] / 2, self.settings['dotSpread'] / 2)
+                                lines = self.getLinesWithinRect(bounds)
 
-                                #* Get all the lines that are in the bounds, and the halfway in lines seperately
-                                for l in self.lines:
-                                    if bounds.collidepoint(l.start.data()) and bounds.collidepoint(l.end.data()):
-                                        patternLines.append(l)
-                                    elif bounds.collidepoint(l.start.data()) or bounds.collidepoint(l.end.data()):
-                                        halfLines.append(l)
+                                contexts[menu.REPEAT] = Pattern(lines[0], lines[1], bounds, self.settings['dotSpread'])
 
-                                contexts[menu.REPEAT] = Pattern(patternLines, halfLines, bounds, self.settings['dotSpread'])
-
+                                #* Uncomment this to manually repeat the pattern with given settings
+                                    # self.lines = contexts[menu.REPEAT].repeat((self.winWidth + self.settings['dotSpread'], 
+                                    #                                             self.winHeight + self.settings['dotSpread']), 
+                                    #                                            self.offScreenAmount,
+                                    #                                            startPoint=Point(0, 0) - self.offScreenAmount,
+                                    #                                            dotSpread=self.settings['dotSpread'],
+                                    #                                            overlap=[0, 0],
+                                    #                                            halfsies=True
+                                    #                                            )
+                                    # boundsCircles = []
+                                
                                 self.openMenu[menu.REPEAT] = not self.openMenu[menu.REPEAT]
                     if event.unicode == 'o':
-                        # self.menus['repeat'].open = not self.menus['repeat'].open
+                        contexts[menu.OPTION] = self.settings
                         self.openMenu[menu.OPTION] = not self.openMenu[menu.OPTION]
 
                 if menuOpen:
@@ -438,6 +436,7 @@ class Game:
                             self.lines.append(Line(corStart, corEnd, i.color))
 
                 lineBuffer = []
+
             #* Add mirrored current line
             if currentLine is not None and mirroringStates[currentMirrorState] >= 2:
                 curStartx = center.x + (center.x - currentLine.start.x)
@@ -458,9 +457,53 @@ class Game:
             self.drawDots()
             self.drawLines()
 
-            for m in list(self.openMenu):
-                if self.openMenu[m]:
-                    menuManager.draw(deltaTime, m, context=contexts[m])
+            if menuOpen:
+                for m in list(self.openMenu):
+                    if self.openMenu[m]:
+                        dataFromGui = menuManager.draw(deltaTime, m, context=contexts[m])
+                    else:
+                        contexts[m] = None
+
+            #* If there's a pattern, and we haven't repeated it yet
+            if dataFromGui[menu.REPEAT] is not None:
+                #* First close the repeat menu
+                self.openMenu[menu.REPEAT] = False
+
+                #* Find the top left most point
+                startPoint = Point(min(self.dots, key=lambda i: i.x).x,
+                                   min(self.dots, key=lambda i: i.y).y)
+
+                #* Repeat the pattern and add the lines to self.lines
+                self.lines = dataFromGui[menu.REPEAT].repeat((self.winWidth + self.settings['dotSpread'], 
+                                                               self.winHeight + self.settings['dotSpread']),
+                                                              offScreenAmount=self.offScreenAmount,
+                                                              startPoint=startPoint,
+                                                            #   startPoint=self.startingPoint,
+                                                              dotSpread=self.settings['dotSpread']
+                                                              )
+
+                #* Get rid of the lines inside the box
+                # bounds = getLargestRect(boundsCircles)
+                # for l in self.getLinesWithinRect(bounds)[2]:
+                #     del self.lines[l]
+                
+                # if dataFromGui[menu.REPEAT].halfsies:
+                #     for l in self.getLinesWithinRect(bounds)[3]:
+                #         del self.lines[l]
+
+                #* Get rid of the bounds box and circles, we don't need them anymore
+                boundsCircles = []
+
+                #* We only want to run this once
+                dataFromGui[menu.REPEAT] = None
+
+            #* If we've recived data from the options menu, and we haven't done anything with it yet
+            if dataFromGui[menu.OPTION] is not None:
+                self.openMenu[menu.OPTION] = False
+                self.settings = dataFromGui[menu.OPTION]
+                self.dots = genDotArrayPoints(self.size, self.settings['offScreenAmount'], self.settings['dotSpread'])
+                dataFromGui[menu.OPTION] = None
+
 
             pygame.display.flip()
             pygame.display.update()
