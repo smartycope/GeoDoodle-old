@@ -4,13 +4,14 @@ import argparse
 description = 'GeoDoodle is a graph paper-like program for doodling cool patterns.'
 
 parser = argparse.ArgumentParser(description=description)
-parser.add_argument('-v' , '--verbose'                                             , action='store_true')
-parser.add_argument('-o' , '--open'     , help='Open a .gdl file'                  , type=str, nargs='?')
-parser.add_argument('-c' , '--controls' , help='Display in-game controls and exit' , action='store_true')
-parser.add_argument(       '--credits'  , help='Display credits and exit'          , action='store_true')
+parser.add_argument('-v' , '--verbose'                                               , action='store_true')
+parser.add_argument('-o' , '--open'       , help='Open a .gdl file'                  , type=str, nargs='?')
+parser.add_argument('-f' , '--fullscreen' , help='Open into fullscreen'              , action='store_true')
+parser.add_argument('-c' , '--controls'   , help='Display in-game controls and exit' , action='store_true')
+parser.add_argument(       '--credits'    , help='Display credits and exit'          , action='store_true')
 
 args = parser.parse_args()
-args.verbose = True
+# args.verbose = True
 
 controls = '''
 Move the mouse around and click to draw patterns
@@ -23,11 +24,13 @@ f:                  Toggle fullscreen
 c / Right Click:    Finish the current line and start a new one
 u / Ctrl + z:       Undo the last line
 m:                  Increase mirroring
-r:                  Repeat the pattern everywhere (Coming Soon!)
+r:                  Open the repeat Menu
 S / Ctrl + s:       Save the pattern as a .gdl file
 O / Ctrl + o:       Open a .gdl file
 E / Ctrl + e:       Export pattern as an image
 Esc:                Close the program or menu
+Home:               Incread the dot spread by 1
+End:                Decrease the dot spread by 1
 More Coming Soon!'''
 
 credits = '''
@@ -47,7 +50,7 @@ elif args.credits:
     print(credits)
 else:
     # game = Game(1366, 768, 'GeoDoodle', args=args)
-    game = Game(900, 550, 'GeoDoodle', args=args)
+    game = Game(title='GeoDoodle', args=args)
     game.run()
     game.exit()
 

@@ -1,36 +1,65 @@
 * Bugs to Fix:
-   the q/middle click bug
-   make fullscreen work so it's using the better function
-   add a checker in home/end so that dot spread can't reach 0 (0r like, less than 5)
-   arrowkeys get out of sync with the dots if dotspread is changed without ignoreMouse moving
-   make lines scale with the dots
    menu x button makes it so you can't reopen that menu
    you have to press within the menu at least once to get it to recognize any button clicks -- hack fixed
-   check if a line is identical to another line so it won't get double dark
-   b (bounds key) doesn't set properly when using only arrow keys
+   
    the preview pattern in the repeat menu doesn't get the x/yAmount based on the offset
    if you save a pattern and open it later in a bigger window, it's not going to be big enough
-   fix the sliders so when you press their left or right buttons, they only move one value (or a parameterized value)
-        (maybe catch the event and process it myself by calling the 'set value' function?)
-    switch the labels in the ui element classes to use uilabels instead of uitextboxes.
+   esc within the color picker exits out of the entire program
+   the current line doesn't scale with home/end
+   the left/right slider buttons still aren't working properly
+   something's wrong with repeat... 
+   make repeat (or at least the preview) center the pattern in the middle of the surface
+   cut out line doubling up on repeating patterns
+   turn mirroring off as you create a pattern
+   Label is all messed up
+   Add a bunch of file checking stuff
+      check if the file already exists so you don't overwrite it (confirmation window)
+      check that you're allowed to write there
+      check that you have a correct file extension, warn if you don't
+   fix/finish saves
+   add a slash to the end of the file path, and have a suggested filename
+   have q/middle click and e erase all line in mirror modes
 
 
 Features to extend:
    add dynamic width and height to image saving
    The gui can certainly be optimized a lot
-   add a dark theme option checkbox 
+   add a dark theme option checkbox
    add the ability to exclude a specific line when repeating by erasing it in the repeat menu
-   add single horrizontal mirroring
+
    undo (especially with mirroring) gets desynced easily. Make undo and redo tuples to hold all the previous actions?
    make the GUI element positions relative to the size of the window, but have them cap off at a certain value
    add a button that saves the previewed pattern in the repeat GUI without having to leave the menu
    anti-alias exported images
-   add a "keep original pattern" button to the repeat gui
+   add a custom button disabled image to the toolbar buttons
+   figure out how to invert the text color for the toolbar button numbers
+
+
+Refactoring changes:
+   phase out the Color class entirely
+   phase out all widths and heights in favor of sizes
+   simplify all point comparisons from before i overloaded the operators
+
+
+Options to add:
+   add a darkmode option
+   add a toolbar position option
+   add tooltips to all the options
+   "show welcome menu"
+   make seperate 'include halfsies' boxes for each side (aka 4 of them)
+   add tooltips explaining all the options
+   add a repeating option to offset the pattern (like stacked cannonballs instead of a checkers board)
+   add a reapeating option to flip the pattern every other instance
 
 
 Features to add
-    add zooming in
-   have mouse scrolling change the line color
+   add a vsync option
+   add 3D!
+   add allow/disallow screensaver option
+   add an error message if the program can't find various files (setttings file, saves folder, etc.)
+   add an option that lets you select which monitor you want to use (pygame.display.setmode() display flag)
+   add zooming in
+   have shift mouse scrolling change the line color
    all the menus
    hide the mouse when the ignoreMouse is true
    add a setting to optionally have the mouse hidden all the time and only show the focus
@@ -45,9 +74,6 @@ Features to add
 
  * maybe have the repeater (somehow) recognize if it's a tesselation, and then have an x and a y setting pop up to specify the overlap.
     - Perhaps have different kinds tesselation presets?
- * allow screen resizing
- * add mirroring
-    - 2x, 4x, 8x?
  * consider changing the name "GeoDoodle" to "The Tesselator"
  * area selector with the mouse (specifically for an eraser)
  * add capability to use more (or less) than 4 enters to select and area

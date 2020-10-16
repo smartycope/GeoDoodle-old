@@ -70,7 +70,7 @@ def scaleLines(lines, originPoint, startDotSpread, newDotSpread):
     for line in lines:
         start = scalePoint(line.start, originPoint, startDotSpread, newDotSpread)
         end   = scalePoint(line.end,   originPoint, startDotSpread, newDotSpread)
-        returnLines.append(Line(start, end))
+        returnLines.append(Line(start, end, line.color))
 
     return returnLines
 
