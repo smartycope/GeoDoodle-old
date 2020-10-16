@@ -1,1 +1,0 @@
-/home/skipper/hello/Python/GeoDoodle/src/main.py
