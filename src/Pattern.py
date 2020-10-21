@@ -7,7 +7,9 @@ from copy import deepcopy
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
-DIR = os.path.dirname(__file__) + '/../'
+
+import os; DIR = os.path.dirname(os.path.dirname(__file__)); DIR += '\\main\\' if os.name == 'nt' else '/'
+
 
 class Pattern:
     def __init__(self, lines, halfLines, rect, dotSpread, startPoint=Point(0, 0)):
@@ -53,10 +55,10 @@ class Pattern:
         #         if scaleY:
         #             point.y -= (point.y / dotSpread)
 
-# + startPoint - anchorPoint
-# + startPoint - anchorPoint
-# + startPoint - anchorPoint
-# + startPoint - anchorPoint
+        # + startPoint - anchorPoint
+        # + startPoint - anchorPoint
+        # + startPoint - anchorPoint
+        # + startPoint - anchorPoint
 
         for line in lines:
             self.lines.append(Line((line.start - anchorPoint) / dotSpread,

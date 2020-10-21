@@ -6,7 +6,9 @@ from pygame_gui.windows import UIColourPickerDialog, UIFileDialog
 
 from menu import menu
 
-from os.path import dirname; DIR = dirname(__file__) + '/../'
+# import os; DIR = os.path.dirname(__file__); DIR += r'\\..\\' if os.name == 'nt' else '/../'
+import os; DIR = os.path.dirname(os.path.dirname(__file__)); DIR += '\\main\\' if os.name == 'nt' else '/'
+
 
 # All the different elements the GUIs can have. They're essentially my own wrappers for pygame_gui's UIElements,
 #   because they're poorly written (or at least, hard to interface with).

@@ -2,7 +2,6 @@ import os, json
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame, pygame_gui
 
-
 from pygame_gui.core.utility import create_resource_path
 
 from pygame_gui.ui_manager import UIManager
@@ -10,16 +9,15 @@ from pygame_gui.elements.ui_window import UIWindow
 from pygame_gui.elements.ui_image import UIImage
 
 from copy import deepcopy
-# import copyreg
 
 from menu import menu
 from Point import Point
 from Menus import *
 
-from os.path import dirname; DIR = dirname(__file__) + '/../'
-SAVES_FOLDER = DIR + 'saves/'
-GUI_THEME_FILE = DIR + 'data/myTheme.json'
+import os; DIR = os.path.dirname(os.path.dirname(__file__)); DIR += '\\main\\' if os.name == 'nt' else '/'
 
+SAVES_FOLDER = DIR + 'saves'
+GUI_THEME_FILE = DIR + 'data\\myTheme.json' if os.name == 'nt' else 'data/myTheme.json'
 
 NON_TOOLBAR_MENU = list(menu)
 NON_TOOLBAR_MENU.remove(menu.TOOLBAR)

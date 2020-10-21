@@ -2,7 +2,8 @@ from Color import Color, namedColor
 from Point import Point
 import pygame, json
 
-import os; DIR = os.path.dirname(__file__) + '/../'
+import os; DIR = os.path.dirname(os.path.dirname(__file__)); DIR += '\\main\\' if os.name == 'nt' else '/'
+
 
 class Line:
     def __init__(self, start, end=None, color=None):

@@ -15,8 +15,8 @@ import pygame, pygame_gui, pickle, sys
 from PIL import Image, ImageDraw, ImageColor
 import json
 
-DIR = os.path.dirname(__file__) + '/../'
-SAVES_FOLDER = DIR + 'saves/'
+import os; DIR = os.path.dirname(os.path.dirname(__file__)); DIR += '\\main\\' if os.name == 'nt' else '/'
+SAVES_FOLDER = DIR + 'saves'
 DOT_SPREAD_LIMIT = 12
 MIRROR_LINE_COLOR = (87, 11, 13)
 
@@ -438,7 +438,7 @@ class Game:
                                 self.dots = genDotArrayPoints(self.windowedSize, self.settings['offScreenAmount'], self.settings['dotSpread'])
 
                             fullscreen = not fullscreen
-                        if event.unicode in ['S', '\x13']: #* ctrl + s
+                        if event.unicode in ['S', '\x13'] or (event.key == 115 and event.mod == 64): #* ctrl + s
                             if fullscreen:
                                 self.mainSurface = pygame.display.set_mode(self.windowedSize, self.windowedWindowFlags)
                                 self.startingPoint = Point(self.windowedSize) / 2
@@ -455,12 +455,15 @@ class Game:
                                                                     filetypes=(("GeoDoodle Saves","*.gdl"),),
                                                                     parent=root)
 
+                            if '.' not in filename:
+                                filename += '.gdl'
+
                             if len(filename) > 4:
                                 with open(filename, 'wb') as f:
                                     pickle.dump(self.lines, f)
                                 print('File Saved!')
                             root.destroy()
-                        if event.unicode in ['O', '\x0f']: #* ctrl + o
+                        if event.unicode in ['O', '\x0f'] or (event.key == 111 and event.mod == 64): #* ctrl + o
                             if fullscreen:
                                 self.mainSurface = pygame.display.set_mode(self.windowedSize, self.windowedWindowFlags)
                                 self.startingPoint = Point(self.windowedSize) / 2
@@ -474,14 +477,18 @@ class Game:
                             root = Tk()
                             filename = filedialog.askopenfilename(initialdir=self.settings['savesLoc'],
                                                                   title="Open File",
-                                                                  filetypes=(("GeoDoodle Saves","*.gdl"),),
+                                                                  filetypes=(("GeoDoodle Saves","*.gdl"),
+                                                                             ('Any File',       '*.*') ),
                                                                   parent = root)
-                            print(filename)
+                            # print(filename)
+                            if '.' not in filename:
+                                filename += '.gdl'
+
                             if len(filename) > 4:
                                 with open(filename, 'rb') as f:
                                     self.lines = pickle.load(f)
                             root.destroy()
-                        if event.unicode in ['E', '\x05']: #* ctrl + e
+                        if event.unicode in ['E', '\x05'] or (event.key == 101 and event.mod == 64): #* ctrl + e
                             if fullscreen:
                                 self.mainSurface = pygame.display.set_mode(self.windowedSize, self.windowedWindowFlags)
                                 self.startingPoint = Point(self.windowedSize) / 2
@@ -499,6 +506,7 @@ class Game:
                             # draw.line((0, 0) + image.size, fill=128)
                             # draw.line((0, image.size[1], image.size[0], 0), fill=128)
                             root = Tk()
+
                             filename = filedialog.asksaveasfilename(initialdir=self.settings['imageSavesLoc'],
                                                                     title="Export File",
                                                                     filetypes=(("PNG Image", '*.png'),
@@ -506,6 +514,10 @@ class Game:
                                                                             ('JPEG Image', '*.jpeg'),
                                                                             ('Any File', '*.*')),
                                                                     parent=root)
+                            
+                            if '.' not in filename:
+                                filename += '.gdl'
+                                
                             if len(filename) > 4:
                                 image.save(filename)
                             print('File Saved!')
