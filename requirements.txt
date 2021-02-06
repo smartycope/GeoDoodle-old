@@ -1,4 +1,0 @@
-pygame
-pygame_gui
-pickle
-pillow
