@@ -6,7 +6,8 @@ import json, re
 from Point import Point
 from Geometry import *
 
-from os.path import dirname; DIR = dirname(__file__) + '/../'
+import os; DIR = os.path.dirname(os.path.dirname(__file__)); DIR += '\\main\\' if os.name == 'nt' else '/'
+
 
 with open(DIR + 'settings.jsonc', 'r') as f:
     SETTINGS = json.load(f)
@@ -367,7 +368,13 @@ class Toolbar:
         self.buttons = []
 
         for i in range(10):
-            self.buttons.append(UIButton(pygame.Rect([(spacing * i) + (spacing / 4), (size[1] / 2) - (self.buttonSize[1] / 2)], self.buttonSize), str(i),  manager=uiManager, container=self.toolbar, allow_double_clicks=True))
+            self.buttons.append(UIButton(pygame.Rect([(spacing * i) + (spacing / 4),
+                                                      (size[1] / 2) - (self.buttonSize[1] / 2)],
+                                                    self.buttonSize),
+                                         str(i),
+                                         manager=self.uiManager,
+                                         container=self.toolbar,
+                                         allow_double_clicks=True))
 
     def toggle(self, state=None):
         if state is None:
