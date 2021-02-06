@@ -1,0 +1,104 @@
+{
+    "FPS": 30,
+    "backgroundColor": [
+        200,
+        160,
+        100
+    ],
+    "boundsCircleColor": [
+        78,
+        64,
+        64
+    ],
+    "boundsLineColor": [
+        103,
+        89,
+        86
+    ],
+    "defaultLineColor": [
+        0,
+        0,
+        0
+    ],
+    "dotColor": [
+        0,
+        0,
+        0
+    ],
+    "dotSize": 2,
+    "dotSpread": 30,
+    "dragDelay": 20,
+    "exportLineThickness": 2,
+    "focusColor": [
+        0,
+        0,
+        255
+    ],
+    "focusRadius": 6,
+    "iconFile": "icon3.png",
+    "imageSaveLoc": "saves/",
+    "imageSavesLoc": "saves/",
+    "keyRepeatDelay": 200,
+    "keyRepeatInterval": 20,
+    "lineThickness": 2,
+    "offScreenAmount": 2,
+    "saveLoc": "saves/",
+    "savesLoc": "saves/",
+    "themeFile": "theme_1.json",
+    "toolbarColors": [
+        [
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            85,
+            0
+        ],
+        [
+            170,
+            0,
+            0
+        ],
+        [
+            0,
+            93,
+            134
+        ],
+        [
+            130,
+            11,
+            11,
+            255
+        ],
+        [
+            26,
+            62,
+            206,
+            255
+        ],
+        [
+            0,
+            51,
+            255,
+            255
+        ],
+        [
+            93,
+            27,
+            193,
+            255
+        ],
+        [
+            30,
+            30,
+            30
+        ],
+        [
+            255,
+            255,
+            0
+        ]
+    ]
+}

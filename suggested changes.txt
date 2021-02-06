@@ -19,6 +19,14 @@
    fix/finish saves
    add a slash to the end of the file path, and have a suggested filename
    have q/middle click and e erase all line in mirror modes
+   number buttons don't change the color
+   resizing doesn't work anymore
+   if you make the window smaller, mirror goes off the origional size
+      - toolbar goes off original size as well
+   allow dotSpread to be different in the x and y axies
+   repeat is out of sync with the dots
+   repeat end pattern is out of sync with the dots as well
+   
 
 
 Features to extend:
@@ -33,12 +41,17 @@ Features to extend:
    anti-alias exported images
    add a custom button disabled image to the toolbar buttons
    figure out how to invert the text color for the toolbar button numbers
+   make e, if pressed on a bounds circle, erase just the bounds circle
+   consider adding arrow keys to move sliders
+   add reverse mirroring (so it flips the pattern you draw)
+   add the ability to mirror around the focus point, instead of just the center
 
 
 Refactoring changes:
    phase out the Color class entirely
    phase out all widths and heights in favor of sizes
    simplify all point comparisons from before i overloaded the operators
+   Add a lot more to the README
 
 
 Options to add:
