@@ -56,4 +56,16 @@ src/Array.h
 src/point.cpp
 src/point.h
 
-
+dist/
+Qt_Version/.tmp/
+Qt_Version/bin/
+Qt_Version/include/
+Qt_Version/lib/
+Qt_Version/lib64/
+Qt_Version/__pycache__/
+Qt_Version/src/__pycache__/
+Pygame_Version/__pycache__/
+Pygame_Version/bin/
+Pygame_Version/include/
+Pygame_Version/lib/
+Pygame_Version/lib64/
