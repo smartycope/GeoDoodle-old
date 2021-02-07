@@ -325,8 +325,8 @@ class Game(QMainWindow):
                 self.xOffset.sliderMoved.connect(lambda pos: self.update(xpos=pos))
                 self.yOffset.sliderMoved.connect(lambda pos: self.update(ypos=pos))
                 self.okCancel.accepted.connect(self.update)
+                self.restoreDefaults.clicked.connect(self.setDefaults)
 
-            @timeFunc
             @pyqtSlot()
             def update(self, xpos=None, ypos=None):
                 if xpos is None:
@@ -336,12 +336,35 @@ class Game(QMainWindow):
 
                 #* Update all of the pattern options in paper
                 self.paper.overlap = (xpos, ypos)
-                # self.paper.
+                self.paper.includeHalfsies = self.includeHalfsies.isChecked()
+                self.paper.rowSkip = self.rowSkip.value()
+                self.paper.rowSkipAmount = self.rowSkipAmount.value()
+                self.paper.columnSkip = self.columnSkip.value()
+                self.paper.columnSkipAmount = self.columnSkipAmount.value()
 
                 self.paper.update()
                 self.paper.repeatPattern(self.pattern)
 
                 return super().update()
+
+            @pyqtSlot()
+            def setDefaults(self):
+                self.paper.overlap = (0, 0)
+                self.paper.includeHalfsies = True
+                self.paper.rowSkip = 0
+                self.paper.rowSkipAmount = 0
+                self.paper.columnSkip = 0
+                self.paper.columnSkipAmount = 0
+
+                self.xOffset.setSliderPosition(0)
+                self.yOffset.setSliderPosition(0)
+
+                self.includeHalfies.setChecked(True)
+
+                self.rowSkip.setValue(0)
+                self.rowSkipAmount.setValue(0)
+                self.columnSkipAmount.setValue(0)
+                self.columnSkip.setValue(0)
 
 
         if len(self.paper.boundsCircles) > 1:
@@ -367,10 +390,9 @@ class Game(QMainWindow):
             self.patternMenu.xOffset.setMaximum(  patternSize.width() / self.paper.dotSpread * MAX_SPREAD_MULTIPLIER)
             # self.patternMenu.xOffset.setSliderPosition(0)
 
-            self.patternMenu.yOffset.setMinimum(-(patternSize.height()/ self.paper.dotSpread) + 1)
-            self.patternMenu.yOffset.setMaximum(  patternSize.height()/ self.paper.dotSpread * MAX_SPREAD_MULTIPLIER)
+            self.patternMenu.yOffset.setMinimum(-(patternSize.height() / self.paper.dotSpread) + 1)
+            self.patternMenu.yOffset.setMaximum(  patternSize.height() / self.paper.dotSpread * MAX_SPREAD_MULTIPLIER)
             # self.patternMenu.yOffset.setSliderPosition(0)
-
 
             self.patternMenu.okCancel.accepted.connect(lambda: self.paper.repeatPattern(self.patternMenu.pattern))
 

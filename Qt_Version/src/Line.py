@@ -26,10 +26,15 @@ class Line:
         return self.end != None
 
     def draw(self, display):
+        """ This must be run from within glBegin/glEnd
+        """
         # if self.color is None:
             # assert(not 'No color was specified for a line')
-        display.setPen(self.color)
-        display.drawLine(self.QLine())
+        # display.setPen(self.color)
+        # display.drawLine(self.QLine())
+        glColor(*self.color)
+        glVertex(*self.start.datai())
+        glVertex(*self.end.datai())
 
     def QLine(self):
         return QLine(*self.start.datai(), *self.end.datai())

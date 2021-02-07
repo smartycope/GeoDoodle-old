@@ -1,9 +1,20 @@
 from Point import Pointi
 from Line import Line
+from copy import deepcopy
 # from Geometry import scalePoint, scaleLines, scaleLines_ip
 from math import ceil
 from Cope import reprise, debug, timeFunc
 from PyQt5.QtCore import QRect
+
+try:
+    from OpenGL.GL import *
+    from OpenGL.GLU import *
+    from OpenGL.GLUT import *
+except ImportError:
+    app = QApplication(sys.argv)
+    QMessageBox.critical(None, "OpenGL hellogl", "PyOpenGL must be installed to run this example.")
+    exit(1)
+
 
 @reprise
 class Pattern:
@@ -28,7 +39,6 @@ class Pattern:
                                        (line.end   - anchorPoint) / dotSpread,
                                         line.color))
 
-
     def getRect(self, dotSpread, includeHalfsies=True):
         lines = self.lines
         if includeHalfsies:
@@ -39,7 +49,6 @@ class Pattern:
                      max([i.start for i in lines] + [i.end for i in lines], key=lambda l: l.x).x * dotSpread,
                      max([i.start for i in lines] + [i.end for i in lines], key=lambda l: l.y).y * dotSpread)
 
-    @timeFunc
     def linesAtPos(self, pos, dotSpread, includeHalfsies=True):
         """ WARNING: This will not round to the nearest dot.
             Make sure the position is valid before it is passed in.
@@ -53,7 +62,6 @@ class Pattern:
 
         return returnLines
 
-    @timeFunc
     def repeat(self, areaSize, dotSpread, dotOffset, overlap=[0, 0], includeHalfsies=True):
         returnLines = []
         patternSize = self.getRect(dotSpread, includeHalfsies).size()

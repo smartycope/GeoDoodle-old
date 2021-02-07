@@ -489,22 +489,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>okCancel</sender>
-   <signal>clicked(QAbstractButton*)</signal>
-   <receiver>Dialog</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>228</x>
-     <y>512</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>217</x>
-     <y>268</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>includeHalfsies</sender>
    <signal>clicked()</signal>
    <receiver>Dialog</receiver>

@@ -1,6 +1,7 @@
 # from PIL import Image, ImageDraw, ImageColor
 import json
-import os
+import math
+import os, sys
 import pickle
 from copy import deepcopy
 from os.path import join
@@ -13,10 +14,22 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QWidget
 
-from Cope import DIR, debug, debugged, displayAllLinks, getTime, timeFunc, todo
+from Cope import DIR, debug, debugged, displayAllLinks, getTime, timeFunc, todo, clamp
 from Geometry import *
 from Line import Line
 from Point import Pointf, Pointi
+
+try:
+    from OpenGL.GL import *
+    from OpenGL.GLU import *
+    from OpenGL.GLUT import *
+    from PyQt5.QtOpenGL import *
+except ImportError:
+    app = QApplication(sys.argv)
+    QMessageBox.critical(None, "OpenGL hellogl", "PyOpenGL must be installed to run this example.")
+    exit(1)
+
+
 
 # SAVES_FOLDER = DIR + 'saves/'
 # DOT_SPREAD_LIMIT = 12
@@ -26,10 +39,11 @@ def toQPoint(p):
     return QPoint(p.x, p.y)
 
 
+def clamp(*rgba):
+    return [c / 255 for c in rgba]
+
+
 MOVEMENT_EVENTS  = (QEvent.MouseMove, QEvent.DragMove, QEvent.HoverMove)
-# UPDATE_EVENTS    = (QEvent.MouseButtonPress,
-#                     QEvent.Scroll)
-#                  + MOVEMENT_EVENTS
 
 
 #* Cool events worth looking into:
@@ -52,10 +66,15 @@ class Paper(QOpenGLWidget):
     exportLineThickness = 2
     boundsColor = (30, 30, 30)
     boundsLineColor = mirrorLineColor = (32, 45, 57)
-    aaSamples = 2
+    aaSamples = 4
 
     includeHalfsies = True
     overlap = (0, 0)
+
+    rowSkip = 0
+    rowSkipAmount = 0
+    columnSkip = 0
+    columnSkipAmount = 0
 
     saveDir   = "~/GeoDoodle/saves/"
     exportDir = "~/GeoDoodle/images/"
@@ -87,16 +106,29 @@ class Paper(QOpenGLWidget):
         self.mirroringStates = [0, 1, 2, 4] # 1 is horizontal line only
         self.specificErase = None
         self.boundsCircles = ()
+        self.installEventFilter(self)
 
         fmt = QSurfaceFormat()
         fmt.setSamples(self.aaSamples)
+        # fmt.setStereo(True)
+        fmt.setRenderableType(QSurfaceFormat.OpenGLES)
+        # fmt.setAlphaBufferSize(0)
         self.setFormat(fmt)
 
-        self.installEventFilter(self)
 
+
+
+    def initializeGL(self):
+        glClearDepth(1.0)
+        glDepthFunc(GL_LESS)
+        glEnable(GL_DEPTH_TEST)
+        glShadeModel(GL_SMOOTH)
+        glMatrixMode(GL_PROJECTION)
+        # glLoadIdentity()
+        # gluPerspective(45.0,1.33,0.1, 100.0)
+        glMatrixMode(GL_MODELVIEW)
 
 #* Update Functions
-    @timeFunc
     def updateFocus(self):
         self.focusLoc = Pointi(min(self.dots, key=lambda i:abs(i.x - self.mouseLoc.x)).x + 1,
                                min(self.dots, key=lambda i:abs(i.y - self.mouseLoc.y)).y + 1)
@@ -107,6 +139,7 @@ class Paper(QOpenGLWidget):
         self.updateFocus()
         if self.currentLine is not None:
             self.currentLine.end = self.focusLoc
+
 
 
 #* Event Functions
@@ -132,6 +165,13 @@ class Paper(QOpenGLWidget):
                 if self.dragButtons[int(event.button())]:
                     self.dragButtons[int(event.button())] = False
                     self.createLine(linkAnother=int(event.button()) == Qt.RightButton)
+
+            if event.type() == QEvent.MouseButtonDblClick:
+                if int(event.buttons()) == Qt.LeftButton:
+                    self.createLine(True)
+
+                elif int(event.buttons()) == Qt.RightButton:
+                    self.createLine(True)
 
         return super().eventFilter(target, event)
 
@@ -220,63 +260,124 @@ class Paper(QOpenGLWidget):
 
 
 #* Draw Functions
-    @timeFunc
-    def paintEvent(self, event):
-        # debug('Drawing!')
-
-        # debug()
-
+    def paintGL(self):
         #* Just putting this out there....
-        # Qt::NoPen	0	no line at all. For example, QPainter::drawRect() fills but does not draw any boundary line.
-        # Qt::SolidLine	1	A plain line.
-        # Qt::DashLine	2	Dashes separated by a few pixels.
-        # Qt::DotLine	3	Dots separated by a few pixels.
-        # Qt::DashDotLine	4	Alternate dots and dashes.
-        # Qt::DashDotDotLine	5	One dash, two dots, one dash, two dots.
-        # Qt::CustomDashLine
+            # Qt::NoPen	0	no line at all. For example, QPainter::drawRect() fills but does not draw any boundary line.
+            # Qt::SolidLine	1	A plain line.
+            # Qt::DashLine	2	Dashes separated by a few pixels.
+            # Qt::DotLine	3	Dots separated by a few pixels.
+            # Qt::DashDotLine	4	Alternate dots and dashes.
+            # Qt::DashDotDotLine	5	One dash, two dots, one dash, two dots.
+            # Qt::CustomDashLine
 
+        # debug(self.overlap)
 
+        # self.qp.begin(self)
 
-        # if not self.qp.isActive():
-        self.qp.begin(self)
+        # self.qp.setRenderHint(QPainter.Antialiasing)
+        # #* This slows it down significantly
+        # # self.qp.setRenderHint(QPainter.HighQualityAntialiasing)
 
-        self.qp.setRenderHint(QPainter.Antialiasing)
-        self.qp.setRenderHint(QPainter.HighQualityAntialiasing)
+        # #* Fill the background
+        # self.qp.fillRect(self.rect(), QColor(*self.backgroundColor))
 
-        # debug(self.qp.Antialiasing)
-        # self.qp.Antialiasing = True
-        # debug(self.qp.HighQualityAntialiasing)
-        # self.qp.HighQualityAntialiasing = True
+        # self.drawDots()
+        # self.drawLines()
+        # self.drawFocus()
+        # self.drawBounds()
 
-        #* Fill the background
-        self.qp.fillRect(self.rect(), QColor(*self.backgroundColor))
+        # self.qp.end()
 
-        # debug(self.dots)
+    # def paintGL(self):
+        #* Set the background Color
+        #   does this need to be done every time?
+        # glClearColor(*self.backgroundColor, 255)
+
+        glClearColor(*clamp(*self.backgroundColor), 255)
+        #* Resets the 'surface' to the background color
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        #* Resets the current matrix
+        glLoadIdentity()
+        # glTranslatef(-2.5, 0.5, -6.0)
+        # glColor(*self.)
+        # glColor3f( 0.0, 0.0, 0.0 )
+        # glPolygonMode(GL_FRONT, GL_FILL)
+        # glBegin(GL_POINTS)
+        # glBegin(GL_TRIANGLES)
+        # glVertex3f(2.0,-1.2,0.0)
+        # glVertex3f(2.6,0.0,0.0)
+        # glVertex3f(2.9,-1.2,0.0)
         self.drawDots()
-        self.drawLines()
-        self.drawFocus()
-        self.drawBounds()
 
-        self.qp.end()
+        # glEnd()
+        # glFlush()
 
-    @timeFunc
+        # glColor3ub(r,g,b)
+        # glBegin(GL_LINES)
+        # #glRotate(10,500,-500,0)
+        # glVertex2f(0,500)
+        # glVertex2f(0,-500)
+        glFlush()
+
     def drawLines(self):
-        for line in self.lines + self.metaLines + ([self.currentLine] if self.currentLine is not None else []):
-            line.draw(self.qp)
+        glColor(*self.dotColor)
+        glBegin(GL_LINES)
 
-    @timeFunc
+        for line in self.lines + self.metaLines + ([self.currentLine] if self.currentLine is not None else []):
+            # line.draw(self.qp)
+            line.draw()
+
+        glEnd()
+
     def drawDots(self):
-        self.qp.setPen(QColor(*self.dotColor))
+        # self.qp.setPen(QColor(*self.dotColor))
+        glColor(*clamp(self.dotColor)
+        glBegin(GL_POINTS)
 
         for i in self.dots:
-            self.qp.drawRect(QRect(*i.datai(), self.dotSize, self.dotSize))
+            # self.qp.drawRect(QRect(*i.datai(), self.dotSize, self.dotSize))
             # self.qp.drawPoint(*i.datai())
+            glVertex(*i.datai())
             # self.qp.drawPoint(*i.datai())
+
+        glEnd()
+
+    def drawCircle(self, center, radius, filled=False, vertexCount=3):
+        #* Create a buffer for vertex data
+        buffer = [] # = new float[vertexCount*2] # (x,y) for each vertex
+
+        #* Center vertex for triangle fan
+        buffer.append(center.x)
+        buffer.append(center.y)
+
+        #* Outer vertices of the circle
+        outerVertexCount = vertexCount-1
+
+        for i in range(outerVertexCount):
+            percent = i / (outerVertexCount-1)
+            rad = percent * 2 * math.PI
+
+            #* Vertex position
+            outer_x = center.x + radius * math.cos(rad)
+            outer_y = center.y + radius * math.sin(rad)
+
+            buffer.append(outer_x)
+            buffer.append(outer_y)
+
+        #* Create VBO from buffer with glBufferData()
+        if filled:
+            glDrawArrays(GL_TRIANGLE_FAN, 0, vertexCount)
+        else:
+            glDrawArrays(GL_LINE_LOOP, 2, outerVertexCount)
+
 
 
     def drawFocus(self):
-        self.qp.setPen(QColor(*self.focusColor))
-        self.qp.drawEllipse(*(self.focusLoc-6).datai(), self.focusRadius, self.focusRadius)
+        # self.qp.setPen(QColor(*self.focusColor))
+        # self.qp.drawEllipse(*(self.focusLoc-6).datai(), self.focusRadius, self.focusRadius)
+        glColor(*clamp(self.focusColor))
+        # self.drawCircle(self.focusLoc, self.focusRadius)
+
 
 
     def drawBounds(self):

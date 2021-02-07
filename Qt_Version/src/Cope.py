@@ -2,6 +2,7 @@ from random import randint
 import math, re
 from time import process_time
 from typing import Callable, Any, Iterable, Optional, Union
+import atexit
 
 from os.path import dirname, join
 DIR  = dirname(dirname(__file__))
@@ -19,7 +20,7 @@ DISPLAY_FUNC = False
 DISPLAY_LINK = False
 HIDE_TODO    = False
 
-
+#* Setters for the gloabals
 def displayAllFiles(to=True):
     global DISPLAY_FILE
     DISPLAY_FILE = to
@@ -41,6 +42,15 @@ def hideAllTodos(to=True):
 # none, blue, green, orange, purple, cyan, alert red
 colors = ['0', '34', '32', '33', '35', '36', '31']
 
+
+def clamp(*rgba):
+    """ Clamp a 0-255 color to a float between 1 and 0.
+        Helpful for openGL commands.
+    """
+    if len(rgba) == 1 and type(rgba[0]) in (tuple, list):
+        return [c / 255 for c in rgba[0]]
+    else:
+        return [c / 255 for c in rgba]
 
 
 # https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
@@ -75,7 +85,7 @@ def _resetColor():
     print('\033[0m',  end='')
     print('\033[39m', end='')
     print('\033[49m', end='')
-    print(' ', end='')
+    print('_', end='')
 
     # try:
     #     # print('\033[39m', end='')
@@ -189,8 +199,8 @@ def _printLink(filename, lineNum, function=None):
     """
     try:
         _printColor(40, 43, 46)
-        if function is None: #             \|/  Oddly enough, this double quote is nessicary
-            print('\t', filename, '", line ', lineNum, sep='')
+        if function is None: #    \|/  Oddly enough, this double quote is nessicary
+            print('\t', filename, '", line ', lineNum, '\033[0m', sep='')
         else:
             print('File "', filename, '", line ', lineNum, ', in ', function, sep='')
 
@@ -198,6 +208,7 @@ def _printLink(filename, lineNum, function=None):
     finally:
         _resetColor()
     _resetColor()
+    print('\033[0m', '|', end='')
 
 
 def basicColoredPrint(string, color, fg):
@@ -251,17 +262,8 @@ def copesNameof(calls=0, full=True, displayParamParams=False, customMetaData=Non
     return line
 
 "        debug(classs.method(methodParam1, methodParam2, kwMethodParam=False), secondVar, showFunc=True, color = 6)\n"
-"        debug(classs.method(methodParam1, methodParam2, kwMethodParam=False), "
-"              secondVar, showFunc=True, color = 6)\n"
-
-
-
-
-
-
 
 # print(copesNameof())
-
 
 
 # TODO This has not been written
@@ -270,8 +272,6 @@ def getVarName(useBackup=True, calls=0, full=True, customMetaData=None):
         line = customMetaData.code_context[0]
     else:
         line = _getMetaData(calls+2).code_context[0]
-
-
 
 
 
@@ -541,20 +541,47 @@ def getMidPoint(p1, p2):
     return Pointf((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
 
 
+timingData = {}
+
 #* A function decorator that prints how long it takes for a function to run
 def timeFunc(func, accuracy=5):
     def wrap(*params, **kwparams):
+        global timingData
+
         t = process_time()
 
         returns = func(*params, **kwparams)
 
         t2 = process_time()
+
         elapsed_time = round(t2 - t, accuracy)
         name = func.__name__
+
+        try:
+            timingData[name] += (elapsed_time,)
+        except KeyError:
+            timingData[name] = (elapsed_time,)
+
+        _printDebugCount()
         # print(name, ' ' * (10 - len(name)), 'took', elapsed_time if elapsed_time >= 0.00001 else 0.00000, '\ttime to run.')
-        print(name, ' ' * (15 - len(name)), 'took', f'{elapsed_time:.{accuracy}f}', '\ttime to run.')
+        print(f'{name:<12} took {elapsed_time:.{accuracy}f} seconds to run.')
+        #  ' ' * (15 - len(name)),
         return returns
     return wrap
+
+
+#* I realized *after* I wrote this that this is a profiler. Oops.
+def _printTimingData(accuracy=5):
+    global timingData
+    if len(timingData):
+        print()
+
+        maxName = len(max(timingData.keys(), key=len))
+        maxNum  = len(str(len(max(timingData.values(), key=lambda x: len(str(len(x)))))))
+        for name, times in reversed(sorted(timingData.items(), key=lambda x: sum(x[1]))):
+            print(f'{name:<{maxName}} was called {len(times):<{maxNum}} times taking {sum(times)/len(times):.{accuracy}f} seconds on average for a total of {sum(times):.{accuracy}f} seconds.')
+
+atexit.register(_printTimingData)
 
 
 
@@ -578,12 +605,14 @@ class getTime:
         print(self.name, ' ' * (15 - len(self.name)), 'took', f'{elapsed_time:.{self.accuracy}f}', '\ttime to run.')
 
 
+
 def center(string):
     """ Centers a string for printing in the terminal
     """
     from os import get_terminal_size
     for _ in range(int((get_terminal_size().columns - len(string)) / 2)): string = ' ' + string
     return string
+
 
 
 def isPowerOf2(x):
@@ -636,10 +665,10 @@ def darken(rgb, amount):
 
 #* Tkinter (ttk specifically)
 
-import tkinter as tk
-import tkinter.ttk as ttk
-from contextlib import redirect_stdout
-import ttkthemes
+# import tkinter as tk
+# import tkinter.ttk as ttk
+# from contextlib import redirect_stdout
+# import ttkthemes
 
 def stylenameElementOptions(stylename):
     '''Function to expose the options of every element associated to a widget
