@@ -12,14 +12,16 @@ from PyQt5.QtCore import QEvent, QFile, QLine, QLineF, QRect, QRectF, Qt
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QWidget
+from PyQt5.QtWebEngineWidgets import *
+import PyQt5.QtWebEngineWidgets
 
 from ColorDialog import ColorDialog
-from Cope import DIR, UI, DATA, darken, debug, debugged, getTime, timeFunc, todo
+from Cope import DIR, UI, DATA, darken, debug, debugged, getTime, timeFunc, todo, collidePoint
 from Geometry import *
 from Line import Line
 from Paper import Paper
 from Pattern import Pattern
-from Point import Pointf, Pointi
+from Point import CoordPoint, TLPoint, GLPoint, InfPoint
 
 # SAVES_FOLDER = DIR + 'saves/'
 # DOT_SPREAD_LIMIT = 12
@@ -36,8 +38,7 @@ from Point import Pointf, Pointi
 
 #* How much we're allowed to seperate patterns * their size
 MAX_SPREAD_MULTIPLIER = 2
-
-
+QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 
 
 class Game(QMainWindow):
@@ -74,7 +75,10 @@ class Game(QMainWindow):
         # self.setCentralWidget(self.paper)
         # self.paper = self.centralWidget()
 
-        self.setSizeIncrement(self.paper.dotSpread, self.paper.dotSpread)
+        #* self.setSizeIncrement(self.paper.dotSpread, self.paper.dotSpread)
+
+        # self.setAttribute(Qt.AA_ShareOpenGLContexts)
+        # QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 
         self.fullscreen = False
         self.bindMenuBar()
@@ -85,6 +89,7 @@ class Game(QMainWindow):
         self.createToolbar()
 
         self.installEventFilter(self)
+        self.setGeometry(100 / self.width(), 100 / self.height(), self.width(), self.height())
         # for i in self.actions:
         #     i.installEventFilter(self)
 
@@ -98,46 +103,108 @@ class Game(QMainWindow):
 
 
     def bindMenuBar(self):
-        todo('bind mirroring')
-        self.getMenuBarAction('File', 'New'         ).triggered.connect(self.paper._new)
-        self.getMenuBarAction('File', 'Open...'     ).triggered.connect(self.paper.open)
-        self.getMenuBarAction('File', 'Save'        ).triggered.connect(self.paper.save)
-        self.getMenuBarAction('File', 'Save As...'  ).triggered.connect(self.paper.saveAs)
-        self.getMenuBarAction('File', 'Export As...').triggered.connect(self.paper.export)
-        self.getMenuBarAction('File', 'Quit'        ).triggered.connect(self.exit)
+        self.new_.triggered.connect(self.paper.new_)
+        self.open.triggered.connect(self.paper.open)
+        self.save.triggered.connect(self.paper.save)
+        self.saveAs.triggered.connect(self.paper.saveAs)
+        self.export_.triggered.connect(self.paper.export)
+        self.quit.triggered.connect(self.exit)
 
-        self.getMenuBarAction('Edit', 'Preferences...').triggered.connect(self.preferencesMenu)
-        self.getMenuBarAction('Edit', 'Undo'          ).triggered.connect(self.paper.undo)
-        self.getMenuBarAction('Edit', 'Redo'          ).triggered.connect(self.paper.redo)
+        self.preferencesMenu.triggered.connect(self._preferencesMenu)
+        self.undo.triggered.connect(self.paper.undo)
+        self.redo.triggered.connect(self.paper.redo)
 
-        self.getMenuBarAction('View', 'Toggle Fullscreen').triggered.connect(self.toggleFullscreen)
-        self.getMenuBarAction('View', 'Toggle Toolbar'   ).triggered.connect(self.toggleToolbar)
+        self.fullscreen_.triggered.connect(self.toggleFullscreen)
+        self.showToolbar.triggered.connect(self.toggleToolbar)
+        self.showLen.triggered.connect(self.paper.setShowLen)
 
-        self.getMenuBarAction('Pattern', 'Repeat...'    ).triggered.connect(self.repeatMenu)
-        self.getMenuBarAction('Pattern', 'Add Bounds'   ).triggered.connect(self.paper.toggleBoundsMode)
-        self.getMenuBarAction('Pattern', 'Clear Pattern').triggered.connect(self.paper.clearAll)
+        self.repeatMenu.triggered.connect(self._repeatMenu)
+        self.addBound.triggered.connect(self.paper.toggleBoundsMode)
+        self.clearAll.triggered.connect(self.paper.clearAll)
+        # mirror
+        # mirrorInvert
+        # mirrorVertical
+        # mirrorHorizontal
+        # mirrorCrossing
 
-        self.getMenuBarAction('Help', 'Controls...').triggered.connect(self.controlsMenu)
-        self.getMenuBarAction('Help', 'About'      ).triggered.connect(self.aboutMenu)
-        self.getMenuBarAction('Help', 'Credits'    ).triggered.connect(self.creditsMenu)
-        self.getMenuBarAction('Help', 'License'    ).triggered.connect(self.licenseMenu)
-        self.getMenuBarAction('Help', 'Donate'     ).triggered.connect(self.donateMenu)
+        self.controlsMenu.triggered.connect(self._controlsMenu)
+        self.aboutMenu.triggered.connect(self._aboutMenu)
+        self.creditsMenu.triggered.connect(self._creditsMenu)
+        self.licenseMenu.triggered.connect(self._licenseMenu)
+        self.donateMenu.triggered.connect(self._donateMenu)
 
         # tb.actionTriggered[QAction].connect(self.toolbtnpressed)
 
 
-    def preferencesMenu(self):
+    def _preferencesMenu(self):
         self.optionsMenu = uic.loadUi(join(UI, "preferences.ui"))
+        # self.shortCuts = {}
+
+        def restoreDefaults():
+            todo('set defaults')
+
+        def setShortcut():
+            todo('custom shortcuts')
+
+        def setBackground(selector):
+            debug(selector)
+            if selector == "Color":
+                self.paper.background = self.optionsMenu.backgroundColor.getColor()
+            elif selector == "Pattern":
+                todo('figure out how to select a pattern/gradient')
+                self.paper.background = self.optionsMenu.backgroundColor.getColor()
+            elif selector == "Image":
+                self.paper.background = self.optionsMenu.backgroundPath.file
+            elif selector == "Map Image":
+                todo('get an image from the map')
+                self.paper.background = (255, 160, 100, 255)
+            else:
+                raise UserWarning("Something has gone horribly, horribly wrong.")
+
+
+        #* Bind the dot unit mesurement to look pretty
+        self.optionsMenu.dotSpreadMeasure.setSuffix(' ' + self.optionsMenu.dotSpreadUnit.text())
+        self.optionsMenu.dotSpreadUnit.textEdited.connect(lambda s: self.optionsMenu.dotSpreadMeasure.setSuffix(' ' + s))
+
+        #* Connect the restoreDefaults button
+        self.optionsMenu.restoreDefaults.clicked.connect(restoreDefaults)
+
+        #* Set all the values from paper
+        if type(self.paper.background) is tuple:
+            self.optionsMenu.backgroundColor.setColor(self.paper.background)
+        elif type(self.paper.background) is str:
+            self.optionsMenu.backgroundPath.file = self.paper.background
+        # elif type(self.paper.background) is QGradient:
+        #*     todo('Setting QGradient')
+        # elif type(self.paper.background) is QImage:
+        #*     todo('Setting QImage')
+
+        self.optionsMenu.dotColor.setColor(self.paper.dotColor)
+        self.optionsMenu.focusColor.setColor(self.paper.focusColor)
+
+        self.optionsMenu.dotSpread.setValue(self.paper.dotSpread)
+        self.optionsMenu.dotSpreadMeasure.setValue(self.paper.dotSpreadMeasure)
+        self.optionsMenu.dotSpreadUnit.setText(self.paper.dotSpreadUnit)
+
+        self.optionsMenu.exportThickness.setValue(self.paper.exportThickness)
+        self.optionsMenu.savePath.setText(self.paper.savePath)
+        self.optionsMenu.exportPath.setText(self.paper.exportPath)
+
+        #* Fill the drop down menus
+        self.optionsMenu.backgroundType.addItems(("Color", "Pattern", "Image", "Map Image"))
+
+
+        #* Connect the background menu
+        self.optionsMenu.backgroundType.currentIndexChanged["QString"].connect(setBackground)
+
+        # TODO Set up the shortcuts
+        self.optionsMenu.setShortcut.clicked.connect(setShortcut)
+
+        #* Connect the ok button
+        self.optionsMenu.accepted.connect(lambda *_: self.paper.updateSettings(self.optionsMenu))
+        self.optionsMenu.accepted.connect(lambda *_: setBackground(self.optionsMenu.backgroundType.currentText()))
+
         self.optionsMenu.show()
-
-
-    #* This is waaaay harder than it needs to be, but I don't know an easier way of doing it.
-    def getMenuBarAction(self, menu, *path):
-
-        parent = self.menuBar().actions()[[i.text() for i in self.menuBar().actions()].index(menu)]
-        for i in path:
-            parent = parent.menu().actions()[[i.text() for i in parent.menu().actions()].index(i)]
-        return parent
 
 
     def toggleFullscreen(self):
@@ -205,40 +272,56 @@ class Game(QMainWindow):
                 else:
                     self.timer.start(self.delay)
 
+        class ToolColorButton(QDoubleButton):
+            colors = [QColor(i) for i in ('black', 'red', 'green', 'yellow', 'orange', 'blue', 'purple', 'white', 'brown', 'pink')]
+            colorChanged = pyqtSignal(tuple)
+
+            def __init__(self, index, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+
+                self.color = self.colors[index]
+                self.setObjectName(str(index+1))
+                self.setText(str(index+1))
+                self.setMinimumWidth(45)
+                self.setShortcut(QKeySequence(str(index-1)))
+                self.updateColor()
+
+                self.clicked.connect(self.updateColor)
+                self.doubleClicked.connect(self.getColor)
+
+            def updateColor(self):
+                #* StyleSheet method
+                self.setStyleSheet(f"widget-animation-duration:40;"
+                                   f"background-color: rgba{self.color.getRgb()};"
+                                   f"color: rgba{self.color.getRgb()};"
+                                   f"selection-background-color: rgba{self.color.getRgb()};"
+                                   f"selection-color: rgba{self.color.getRgb()};")
+
+                #* Palette method
+                # pal = QPalette()
+                # pal.setColor(QPalette.Highlight, self.colors[i])
+                # pal.setColor(QPalette.Button, self.colors[i])
+                # pal.setColor(QPalette.ButtonText, self.colors[i])
+                # self.actions[i].setPalette(pal)
+
+                # self.paper.currentDrawColor = self.colors[i].getRgb()
+
+                self.colorChanged.emit(self.color.getRgb())
+
+                # self.clearFocus()
+                self.setFocus()
+                self.update()
+
+            def getColor(self):
+                self.color = QColorDialog.getColor()
+                self.updateColor()
+
+
         self.toolbar = self.addToolBar("")
-
-        spacing = self.width() / 5
-        # self.toolbar.setStyleSheet(f'* {{ spacing: {spacing} }}')
-
-        def setupStyleSheet(i):
-            self.toolbar.setStyleSheet(self.toolbar.styleSheet() +
-                f"\nQToolButton#{i+1} {{ color:rgba{self.colors[i].getRgb()} }}"
-                f"\nQToolButton#{i+1} {{ background-color:rgba{self.colors[i].getRgb()} }}"
-                # f"\nQToolButton#{i+1} {{ selection-color:rgba{darken(self.colors[i].getRgb(), -30)} }}"
-                # f"\nQToolButton#{i+1} {{ selection-background-color:rgba{darken(self.colors[i].getRgb(), -30)} }}"
-                f"\nQToolButton#{i+1} {{ widget-animation-duration:30 }}"
-            )
-
-        def call(j):
-            self.colors[j] = QColorDialog.getColor()
-            setupStyleSheet(j)
-            setColor(j)
-
-
-        def setColor(j):
-            self.paper.currentDrawColor = self.colors[j]
-            for cnt, _ in enumerate(self.actions):
-                setupStyleSheet(cnt)
-
-            self.actions[j].setFocus()
 
         #* Configure the toolbar setup
         self.toolbar.setLayout(QHBoxLayout())
-        # self.toolbar.layout().setAlignment(Qt.Alignment(Qt.AlignCenter))
-        self.toolbar.layout().setSpacing(25) #(Qt.Alignment(Qt.AlignCenter))
-        # debug(self.toolbar.layout().spacing(), name='spacing')
-        # self.toolbar.
-
+        self.toolbar.layout().setSpacing(25)
 
         #* Make simple expanding widgets to center the colors
         rSpacer = QWidget()
@@ -248,64 +331,13 @@ class Game(QMainWindow):
 
         self.toolbar.addWidget(rSpacer)
 
+        #* Actually add the buttons
         for i in range(10):
-            button = QDoubleButton() #str(i+1))
-            # button.setFocus()
-            # self.toolbar.addAction(action)
-            # button.setFocus()
-
-            button.setObjectName(str(i+1))
-            # self.toolbar.widgetForAction(action).setObjectName(str(i+1))
-            # action.setObjectName(str(i+1))
-            setupStyleSheet(i)
-
-            button.setText(str(i+1))
-            button.setMinimumWidth(45)
-            # button.setShortcut(30+i)
-            button.setShortcut(QKeySequence(str(i-1)))
-
-
+            button = ToolColorButton(i)
+            button.colorChanged.connect(self.paper.setCurrentDrawColor)
             self.toolbar.addWidget(button)
 
-
-            # self.toolbar.widgetForAction(action).setToolTipDuration(-1)
-            # self.toolbar.widgetForAction(action).setToolTip('')
-
-
-            self.actions.append(button)
-
-            #* You SHOULD be able to do this. I have NO IDEA why you can't.
-            #* Someone PLEASE explain this too me.
-            # action.triggered.connect(setColor(i))
-            # action.doubleClicked.connect(call(i))
-
         self.toolbar.addWidget(lSpacer)
-
-        self.actions[0].setFocus()
-
-        #* For loops, why have you forsaken me?
-        self.actions[0].doubleClicked.connect(lambda: call(0))
-        self.actions[1].doubleClicked.connect(lambda: call(1))
-        self.actions[2].doubleClicked.connect(lambda: call(2))
-        self.actions[3].doubleClicked.connect(lambda: call(3))
-        self.actions[4].doubleClicked.connect(lambda: call(4))
-        self.actions[5].doubleClicked.connect(lambda: call(5))
-        self.actions[6].doubleClicked.connect(lambda: call(6))
-        self.actions[7].doubleClicked.connect(lambda: call(7))
-        self.actions[8].doubleClicked.connect(lambda: call(8))
-        self.actions[9].doubleClicked.connect(lambda: call(9))
-
-        self.actions[0].clicked.connect(lambda: setColor(0))
-        self.actions[1].clicked.connect(lambda: setColor(1))
-        self.actions[2].clicked.connect(lambda: setColor(2))
-        self.actions[3].clicked.connect(lambda: setColor(3))
-        self.actions[4].clicked.connect(lambda: setColor(4))
-        self.actions[5].clicked.connect(lambda: setColor(5))
-        self.actions[6].clicked.connect(lambda: setColor(6))
-        self.actions[7].clicked.connect(lambda: setColor(7))
-        self.actions[8].clicked.connect(lambda: setColor(8))
-        self.actions[9].clicked.connect(lambda: setColor(9))
-
         self.toolbar.hide()
 
 
@@ -316,7 +348,7 @@ class Game(QMainWindow):
             self.toolbar.hide()
 
 
-    def repeatMenu(self):
+    def _repeatMenu(self):
         class PatternMenu(QDialog):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -326,13 +358,21 @@ class Game(QMainWindow):
                 self.yOffset.sliderMoved.connect(lambda pos: self.update(ypos=pos))
                 self.okCancel.accepted.connect(self.update)
                 self.restoreDefaults.clicked.connect(self.setDefaults)
+                #* I SHOULDN'T HAVE TO DO THIS.
+                self.paper.width = 402
+                self.paper.height = 318
+                self.paper.setGeometry(0, 0, 402, 318)
 
             @pyqtSlot()
             def update(self, xpos=None, ypos=None):
+                # super().update()
                 if xpos is None:
                     xpos = self.xOffset.value()
                 if ypos is None:
                     ypos = self.yOffset.value()
+
+                # debug(self.paper.size(), color=2)
+                self.paper.reset()
 
                 #* Update all of the pattern options in paper
                 self.paper.overlap = (xpos, ypos)
@@ -349,6 +389,8 @@ class Game(QMainWindow):
 
             @pyqtSlot()
             def setDefaults(self):
+                self.paper.reset()
+
                 self.paper.overlap = (0, 0)
                 self.paper.includeHalfsies = True
                 self.paper.rowSkip = 0
@@ -359,7 +401,7 @@ class Game(QMainWindow):
                 self.xOffset.setSliderPosition(0)
                 self.yOffset.setSliderPosition(0)
 
-                self.includeHalfies.setChecked(True)
+                self.includeHalfsies.setChecked(True)
 
                 self.rowSkip.setValue(0)
                 self.rowSkipAmount.setValue(0)
@@ -367,56 +409,54 @@ class Game(QMainWindow):
                 self.columnSkip.setValue(0)
 
 
-        if len(self.paper.boundsCircles) > 1:
-            self.paper.bounds = getLargestRect(self.paper.boundsCircles)
-            lines = self.paper.getLinesWithinRect(self.paper.bounds)
-            halfLines = self.paper.getHalfLinesWithinRect(self.paper.bounds)
-
-            # pattern = Pattern([Line(Pointi(100, 100), Pointi(20, 20), QColor('black'))], [], QRect(0, 0, 125, 125), DOTSPREAD)
+        if len(self.paper.bounds) > 1:
             try:
-                pattern = Pattern(lines, halfLines, self.paper.dotSpread)
-            except UserWarning:
+                pattern = self.paper.getPattern()
+            except UserWarning as err:
+                debug(err, color=-1)
                 return
 
-            self.patternMenu = PatternMenu()
+            self.patternMenu = PatternMenu(self)
             self.patternMenu.pattern = pattern
 
             #* If you want to by default set the new color to black
-            self.patternMenu.paper.currentDrawColor = QColor('black')
+            self.patternMenu.paper.currentDrawColor = (0, 0, 0)
 
-            patternSize = self.patternMenu.pattern.getRect(self.paper.dotSpread, self.paper.includeHalfsies).size()
+            # patternSize = self.patternMenu.pattern.getSize(self.paper.dotSpread / self.paper.height).size()
 
-            self.patternMenu.xOffset.setMinimum(-(patternSize.width() / self.paper.dotSpread) + 1)
-            self.patternMenu.xOffset.setMaximum(  patternSize.width() / self.paper.dotSpread * MAX_SPREAD_MULTIPLIER)
-            # self.patternMenu.xOffset.setSliderPosition(0)
-
-            self.patternMenu.yOffset.setMinimum(-(patternSize.height() / self.paper.dotSpread) + 1)
-            self.patternMenu.yOffset.setMaximum(  patternSize.height() / self.paper.dotSpread * MAX_SPREAD_MULTIPLIER)
-            # self.patternMenu.yOffset.setSliderPosition(0)
+            self.patternMenu.xOffset.setMinimum(-self.patternMenu.pattern.size[0] + 1)
+            self.patternMenu.yOffset.setMinimum(-self.patternMenu.pattern.size[1] + 1)
+            # self.patternMenu.xOffset.setMaximum(self.patternMenu.pattern.size[0] * MAX_SPREAD_MULTIPLIER)
+            # self.patternMenu.yOffset.setMaximum(self.patternMenu.pattern.size[1] * MAX_SPREAD_MULTIPLIER)
+            self.patternMenu.xOffset.setMaximum(5)
+            self.patternMenu.yOffset.setMaximum(5)
+            # self.patternMenu.xOffset.setSliderPosition(self.patternMenu.pattern.size[0])
+            # self.patternMenu.yOffset.setSliderPosition(self.patternMenu.pattern.size[1])
 
             self.patternMenu.okCancel.accepted.connect(lambda: self.paper.repeatPattern(self.patternMenu.pattern))
 
+            # self.patternMenu.paper.reset()
             self.patternMenu.update()
             self.patternMenu.show()
 
 
-    def controlsMenu(self):
+    def _controlsMenu(self):
         todo('controlsMenu')
 
 
-    def aboutMenu(self):
+    def _aboutMenu(self):
         todo('aboutMenu')
 
 
-    def creditsMenu(self):
+    def _creditsMenu(self):
         todo('creditsMenu')
 
 
-    def licenseMenu(self):
+    def _licenseMenu(self):
         todo('licenseMenu')
 
 
-    def donateMenu(self):
+    def _donateMenu(self):
         todo('donateMenu')
 
 

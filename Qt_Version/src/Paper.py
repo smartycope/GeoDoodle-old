@@ -1,12 +1,14 @@
 # from PIL import Image, ImageDraw, ImageColor
 import json
 import math
-import os, sys
+import os
 import pickle
+import sys
 from copy import deepcopy
 from os.path import join
 from typing import Any, Callable, Iterable, Optional, Union
 
+from OpenGL.arrays.vbo import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtCore import QEvent, QFile, QLine, QLineF, QRect, QRectF, Qt
@@ -14,36 +16,37 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QWidget
 
-from Cope import DIR, debug, debugged, displayAllLinks, getTime, timeFunc, todo, clamp
+from Cope import (DIR, clampColor, debug, debugged, displayAllFiles,
+                  displayAllLinks, getTime, invertColor, timeFunc, todo,
+                  translate)
 from Geometry import *
 from Line import Line
-from Point import Pointf, Pointi
+from Point import CoordPoint, GLPoint, InfPoint, Pointf, TLPoint, dist
 
 try:
     from OpenGL.GL import *
     from OpenGL.GLU import *
     from OpenGL.GLUT import *
-    from PyQt5.QtOpenGL import *
+
+    # from PyQt5.QtOpenGL import *
 except ImportError:
     app = QApplication(sys.argv)
     QMessageBox.critical(None, "OpenGL hellogl", "PyOpenGL must be installed to run this example.")
     exit(1)
 
+import numpy as np
+import numpy.random as rdn
+# from PyQt5 import QtOpenGL
+from OpenGL.GL import *
+
+from Pattern import Pattern
 
 
-# SAVES_FOLDER = DIR + 'saves/'
-# DOT_SPREAD_LIMIT = 12
-# MIRROR_LINE_COLOR = (87, 11, 13)
+displayAllFiles(True)
+
 
 def toQPoint(p):
     return QPoint(p.x, p.y)
-
-
-def clamp(*rgba):
-    return [c / 255 for c in rgba]
-
-
-MOVEMENT_EVENTS  = (QEvent.MouseMove, QEvent.DragMove, QEvent.HoverMove)
 
 
 #* Cool events worth looking into:
@@ -54,19 +57,25 @@ MOVEMENT_EVENTS  = (QEvent.MouseMove, QEvent.DragMove, QEvent.HoverMove)
     # QEvent.HoverMove, QEvent.Leave, QEvent.MouseButtonDblClick
 
 class Paper(QOpenGLWidget):
-    #* Settings
-    backgroundColor = (200, 160, 100)
+#* Static Settings
     offscreenAmount = 0
     dotSpread = 16
-    dotColor = (0, 0, 0)
     dotSize = 1
-    focusColor = (0, 0, 255)
-    focusRadius = 10
+    focusRadius = 0.015
     dragDelay = 7
-    exportLineThickness = 2
-    boundsColor = (30, 30, 30)
-    boundsLineColor = mirrorLineColor = (32, 45, 57)
+    exportThickness = 2
     aaSamples = 4
+
+    # background = (200, 160, 100, 255)
+    background = '/home/marvin/Media/Pictures/quiched my room meme.png'
+    dotColor = (0, 0, 0, 255)
+    focusColor = (0, 0, 255, 255)
+    boundsColor = (30, 30, 30, 255)
+    boundsLineColor = mirrorLineColor = (32, 45, 57, 255)
+    # currentLineColor = (150, 44, 44)
+
+    dotSpreadMeasure = 1
+    dotSpreadUnit = 'dots'
 
     includeHalfsies = True
     overlap = (0, 0)
@@ -76,66 +85,136 @@ class Paper(QOpenGLWidget):
     columnSkip = 0
     columnSkipAmount = 0
 
-    saveDir   = "~/GeoDoodle/saves/"
-    exportDir = "~/GeoDoodle/images/"
-    loadDir   = "~/GeoDoodle/saves/"
+    savePath   = "~/.GeoDoodle/saves/"
+    exportPath = "~/.GeoDoodle/images/"
+    loadDir    = savePath
+
+    mirroringStates = (0, 1, 2, 4) # 1 is horizontal line only
+
+    _image = None
 
 
+
+#* Init functions
     def __init__(self, parent=None):
         super(Paper, self).__init__(parent)
 
-        self.qp = QPainter(self)
+        # self.reset(width, height)
+        self.doReset = True
+
+        # mouseLoc is the 'normal' location of the cursor, focusLoc is the openGL location of the adjusted cursor.
+        self.focusLoc = None # GLPoint(self.width, self.height-1, -1)
+        self.mouseLoc = None # TLPoint(0, 0)
+
+        self.dragButtons = [False] * 32
+
+        self.lines = []
+        self.lineColors = []
+
+        self.setMouseTracking(True)
+        self.installEventFilter(self)
 
         # self.setMinimumSize(100, 100)
-        # self.width = self.window().width
-        # self.height = self.window().height
+        # self.getSize = lambda: (self.window().width(), self.window().height())
 
-        self.getSize = lambda: (self.window().width(), self.window().height())
+        # self.startingPoint = Pointi(self.width / 2, self.height / 2)
+        self.qp = QPainter()
 
-        self.metaLines = []
-        self.startingPoint = Pointi(self.getSize()[0] / 2, self.getSize()[1] / 2)
-        self.dots = genDotArrayPoints(self.getSize(), self.offscreenAmount, self.dotSpread)
-        self.focusLoc = self.mouseLoc = Pointi(0, 0)
-        self.lines = []
-        self.boundsMode = False
-        self.setMouseTracking(True)
-        self.currentLine = None
-        self.dragButtons = [False] * 32
-        self.lineBuffer = []
-        self.currentDrawColor = QColor('black')
-        self.mirroringStates = [0, 1, 2, 4] # 1 is horizontal line only
-        self.specificErase = None
-        self.boundsCircles = ()
-        self.installEventFilter(self)
+        self.showLen = False
+
+        # self.qp.pen().setWidth(1)
+
+        self.qp.font().setFamily('Times')
+        # self.qp.font().setBold(False)
+        self.qp.font().setPointSize(40)
+
 
         fmt = QSurfaceFormat()
         fmt.setSamples(self.aaSamples)
-        # fmt.setStereo(True)
-        fmt.setRenderableType(QSurfaceFormat.OpenGLES)
-        # fmt.setAlphaBufferSize(0)
+        # # fmt.setStereo(True)
+        # fmt.setRenderableType(QSurfaceFormat.OpenGLES)
+        # # fmt.setAlphaBufferSize(0)
         self.setFormat(fmt)
 
 
+    def reset(self):
+        self.doReset = False
+
+        self.width = self.size().width()
+        self.height = self.size().height()
+
+        self.focusLoc = GLPoint(-1, -1, self.width, self.height)
+        self.mouseLoc = TLPoint(0, 0, self.width, self.height)
+
+        # debug(self.geometry(), color=2)
+
+        # Vertex Buffered
+        self.dots = genDotArrayPoints((self.width, self.height), self.offscreenAmount, self.dotSpread)
+                                    #    startPoint=Pointi(-self.width / 2, -self.height / 2))
+        self.centerPoint = TLPoint(min(self.dots, key=lambda p: dist(p, Pointf(self.width / 2, self.height / 2))), None, self.width, self.height)
+
+        # TLPoint(self.dots[0], None, self.width, self.height)
+        # debug(self.centerPoint)
+
+        # Not Vertex Buffered
+        self.metaLines = []
+        self.bounds = set()
+        self.currentLine = None
+        # An ordered list of Lines or tuples of Lines that hold the last lines to be added/removed
+        #   Previously deleted and not drawn lines are included in this.
+        #   Should have a limiter to stop it from getting too big.
+        self.undoBuffer = []
+
+        self.specificEraseBuffer = None
+
+        self.lineVboIndex = 0
+
+        for line in self.lines:
+            if line.label:
+                line.label.hide()
+                line.label = None
+
+        self.currentDrawColor = (0, 0, 0)
+
+        self.initializeGL()
+
+        self.update()
+
+        # self.boundsMode = False
 
 
     def initializeGL(self):
-        glClearDepth(1.0)
-        glDepthFunc(GL_LESS)
-        glEnable(GL_DEPTH_TEST)
-        glShadeModel(GL_SMOOTH)
-        glMatrixMode(GL_PROJECTION)
+        # glClearColor(*clampColor(*self.backgroundColor), 1)
+
+        # npDots = np.array([np.array(i.start, i.end) for i in self.dots], dtype=np.float32)
+        # self.dotCount = npDots.shape[0]
+        # create a VBO, data is a Nx2 Numpy array
+        # self.dotVbo = VBO(npDots)
+
+        self.adjDots = [TLPoint(i, None, self.width, self.height).asGL().data() for i in genDotArrayPoints((self.width, self.height), 0, self.dotSpread)]
+        # debug(self.adjDots)
+
+        self.dotVbo = VBO(np.asarray(self.adjDots, dtype=np.float32))
+        # self.lineVbo = VBO(np.asarray(self.lines, dtype=np.float32))
+        # self.lineColorVbo = VBO(np.asarray(self.lineColors, dtype=np.float32))
+
+        # glShadeModel(GL_SMOOTH)
+        # glMatrixMode(GL_PROJECTION)
         # glLoadIdentity()
-        # gluPerspective(45.0,1.33,0.1, 100.0)
-        glMatrixMode(GL_MODELVIEW)
+        # gluPerspective(45, -1.33, 1, 1)
+        # glMatrixMode(GL_MODELVIEW)
+
+
 
 #* Update Functions
     def updateFocus(self):
-        self.focusLoc = Pointi(min(self.dots, key=lambda i:abs(i.x - self.mouseLoc.x)).x + 1,
-                               min(self.dots, key=lambda i:abs(i.y - self.mouseLoc.y)).y + 1)
+        self.focusLoc = GLPoint(min(self.adjDots, key=lambda p:abs(p[0] - self.mouseLoc.asGL().x))[0],
+                                min(self.adjDots, key=lambda p:abs(p[1] - self.mouseLoc.asGL().y))[1],
+                                self.width, self.height)
 
 
     def updateMouse(self, event):
-        self.mouseLoc = Pointi(event.pos())
+        self.mouseLoc = TLPoint(event.pos(), None, self.width, self.height)
         self.updateFocus()
         if self.currentLine is not None:
             self.currentLine.end = self.focusLoc
@@ -144,8 +223,13 @@ class Paper(QOpenGLWidget):
 
 #* Event Functions
     def eventFilter(self, target, event):
+        #* For some reason, this is the first point after initialization that the width/height are correct
+        if self.doReset and self.size().width() != 100 and self.size().height() != 30:
+            # debug(showFunc=True)
+            self.reset()
+
         if target == self:
-            if event.type() in MOVEMENT_EVENTS:
+            if event.type() in (QEvent.MouseMove, QEvent.DragMove, QEvent.HoverMove):
                 self.updateMouse(event)
                 self.dragButtons[int(event.buttons())] = True
                 self.update()
@@ -164,7 +248,8 @@ class Paper(QOpenGLWidget):
             if event.type() == QEvent.MouseButtonRelease:
                 if self.dragButtons[int(event.button())]:
                     self.dragButtons[int(event.button())] = False
-                    self.createLine(linkAnother=int(event.button()) == Qt.RightButton)
+                    if event.button() & (Qt.RightButton | Qt.LeftButton):
+                        self.createLine(linkAnother=int(event.button()) == Qt.RightButton)
 
             if event.type() == QEvent.MouseButtonDblClick:
                 if int(event.buttons()) == Qt.LeftButton:
@@ -172,7 +257,6 @@ class Paper(QOpenGLWidget):
 
                 elif int(event.buttons()) == Qt.RightButton:
                     self.createLine(True)
-
         return super().eventFilter(target, event)
 
 
@@ -212,27 +296,27 @@ class Paper(QOpenGLWidget):
 
          # if event.key == 264 or event.key == pygame.K_HOME: # numpad up
         #     DOTSPREAD += 1
-        #     self.dots = genDotArrayPoints(self.getSize(), OFFSCREEN_AMOUNT, DOTSPREAD)
+        #     self.dots = genDotArrayPoints((self.width, self.height), OFFSCREEN_AMOUNT, DOTSPREAD)
         # if event.key == 258 or event.key == pygame.K_END: # numpad down
         #     DOTSPREAD -= 1
-            # self.dots = genDotArrayPoints(self.getSize(), OFFSCREEN_AMOUNT, DOTSPREAD)
+            # self.dots = genDotArrayPoints((self.width, self.height), OFFSCREEN_AMOUNT, DOTSPREAD)
 
 
     def specificErase(self):
         todo('specificErase')
         # If there's nothing there, don't do anything
         if self.focusLoc in [i.end for i in self.lines] + [i.start for i in self.lines]:
-            if self.specificErase == None:
-                self.specificErase = self.focusLoc
+            if self.specificEraseBuffer == None:
+                self.specificEraseBuffer = self.focusLoc
             else:
-                assert(type(self.specificErase) == Pointi)
+                assert(type(self.specificEraseBuffer) == Pointi)
                 for index, i in enumerate(self.lines):
-                    if (i.start == self.focusLoc and i.end == self.specificErase) or \
-                    (i.start == self.specificErase and i.end == self.focusLoc):
+                    if (i.start == self.focusLoc and i.end == self.specificEraseBuffer) or \
+                    (i.start == self.specificEraseBuffer and i.end == self.focusLoc):
                         del self.lines[index]
-                self.specificErase = None
+                self.specificEraseBuffer = None
         else:
-            self.specificErase = None
+            self.specificEraseBuffer = None
 
 
     def fileDropped(self, event):
@@ -241,157 +325,222 @@ class Paper(QOpenGLWidget):
 
 
     def moveX(self, dots):
-        self.focusLoc.x += self.dotSpread * dots
+        # I would think you should divide this by self.width instead, but that doesn't seem to work
+        self.focusLoc.x += (self.dotSpread / (self.width / 2)) * dots
         if self.currentLine is not None:
             self.currentLine.end = self.focusLoc
-        if self.window().rect().contains(toQPoint(self.focusLoc), proper=True):
-            self.cursor().setPos(self.mapToGlobal(toQPoint(self.focusLoc)))
-        # self.update()
+            #* If the cursor is inside the window, move the cursor as well,
+            #   That way, when you move it again, it goes from where it shows it is
+        if self.window().rect().contains(toQPoint(self.focusLoc.asTL()), proper=True):
+            self.cursor().setPos(self.mapToGlobal(toQPoint(self.focusLoc.asTL())))
+        self.update()
 
 
     def moveY(self, dots):
-        self.focusLoc.y += self.dotSpread * dots
+        self.focusLoc.y += (self.dotSpread / (self.height / 2)) * dots
         if self.currentLine is not None:
             self.currentLine.end = self.focusLoc
-        if self.window().rect().contains(toQPoint(self.focusLoc), proper=True):
-            self.cursor().setPos(self.mapToGlobal(toQPoint(self.focusLoc)))
-        # self.update()
+            #* If the cursor is inside the window, move the cursor as well,
+            #   That way, when you move it again, it goes from where it shows it is
+        if self.window().rect().contains(toQPoint(self.focusLoc.asTL()), proper=True):
+            self.cursor().setPos(self.mapToGlobal(toQPoint(self.focusLoc.asTL())))
+        self.update()
 
 
 
 #* Draw Functions
     def paintGL(self):
-        #* Just putting this out there....
-            # Qt::NoPen	0	no line at all. For example, QPainter::drawRect() fills but does not draw any boundary line.
-            # Qt::SolidLine	1	A plain line.
-            # Qt::DashLine	2	Dashes separated by a few pixels.
-            # Qt::DotLine	3	Dots separated by a few pixels.
-            # Qt::DashDotLine	4	Alternate dots and dashes.
-            # Qt::DashDotDotLine	5	One dash, two dots, one dash, two dots.
-            # Qt::CustomDashLine
+        if self.doReset:# and not (self.size().width() == 100 and self.size().width() == 30):
+            debug(showFunc=True)
+            self.reset()
+        # debug(self.size(), name='paper size', color=3)
+        # Reset the background color
+        # glClear(GL_COLOR_BUFFER_BIT)
 
-        # debug(self.overlap)
 
-        # self.qp.begin(self)
+        # debug(self.lines, showFile=True)
 
-        # self.qp.setRenderHint(QPainter.Antialiasing)
-        # #* This slows it down significantly
-        # # self.qp.setRenderHint(QPainter.HighQualityAntialiasing)
-
-        # #* Fill the background
-        # self.qp.fillRect(self.rect(), QColor(*self.backgroundColor))
-
-        # self.drawDots()
-        # self.drawLines()
-        # self.drawFocus()
-        # self.drawBounds()
-
-        # self.qp.end()
-
-    # def paintGL(self):
-        #* Set the background Color
-        #   does this need to be done every time?
-        # glClearColor(*self.backgroundColor, 255)
-
-        glClearColor(*clamp(*self.backgroundColor), 255)
-        #* Resets the 'surface' to the background color
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        #* Resets the current matrix
-        glLoadIdentity()
-        # glTranslatef(-2.5, 0.5, -6.0)
-        # glColor(*self.)
-        # glColor3f( 0.0, 0.0, 0.0 )
-        # glPolygonMode(GL_FRONT, GL_FILL)
-        # glBegin(GL_POINTS)
-        # glBegin(GL_TRIANGLES)
-        # glVertex3f(2.0,-1.2,0.0)
-        # glVertex3f(2.6,0.0,0.0)
-        # glVertex3f(2.9,-1.2,0.0)
+        # debug(self.focusLoc, self.lines, self.dots)
+        self.drawBackground()
         self.drawDots()
+        self.drawBounds()
+        self.drawLines()
+        self.drawCurrentLine()
+        self.drawFocus()
 
-        # glEnd()
-        # glFlush()
+        # glColor(*clampColor(self.boundsColor))
+        # self.drawCircle(self.centerPoint.asGL(), self.focusRadius)
 
-        # glColor3ub(r,g,b)
-        # glBegin(GL_LINES)
-        # #glRotate(10,500,-500,0)
-        # glVertex2f(0,500)
-        # glVertex2f(0,-500)
+        #* Resets the current matrix
+        # glLoadIdentity()
         glFlush()
 
+
+    def paintEvent(self, event):
+        self.drawBackground
+        for line in self.lines:
+            if self.showLen:
+                line.createLabel(self, self.dotSpread, self.dotSpreadMeasure, self.dotSpreadUnit, self.background).show()
+            elif line.label:
+                line.label.hide()
+
+        return super().paintEvent(event)
+
+
+    def drawBackground(self):
+        debug(self.background)
+        if type(self.background) is tuple:
+            glColor(*clampColor(*self.background))
+            glBegin(GL_QUADS)
+            glVertex2f(1,1)
+            glVertex2f(1,-1)
+            glVertex2f(-1,-1)
+            glVertex2f(-1,1)
+            glEnd()
+
+        elif type(self.background) is str:
+            if not self._image:
+                self._image = QImage(self.background)
+            else:
+                self.qp.begin(self)
+                target = QRectF(10.0, 20.0, 80.0, 60.0)
+                source = QRectF(0.0, 0.0, 70.0, 40.0)
+                self.qp.drawImage(target, self._image, source)
+                self.qp.end()
+
+
+            # self.imageimage = QImage(self.background)
+
+            # QPainter painter(this)
+            # painter.drawImage(target, image, source)
+
+        elif type(self.background) is QGradient:
+            todo('Drawing QGradient')
+
+        elif type(self.background) is QImage:
+            self.qp.drawImage(0, 0, self.background)
+
+
+
+
     def drawLines(self):
-        glColor(*self.dotColor)
+        # glColor(*clampColor(self.dotColor))
+        # # Bind the VBO
+        # self.lineVbo.bind()
+        # # Tell OpenGL that the VBO contains an array of vertices
+        # glEnableClientState(GL_VERTEX_ARRAY)
+        # # These vertices contain 2 single precision coordinates
+        # glVertexPointer(2, GL_FLOAT, 7, self.dotVbo)
+        # # glVertexPointer(2, GL_FLOAT, 7, self.dotVbo)
+        # # Tell OpenGL that the colors are interspersed already
+        # # glInterleavedArrays(GL_C3F,
+        # glColorPointer(3, GL_FLOAT, 5, self.lineColorVbo)
+        # # Draw "count" points from the VBO
+        # glDrawArrays(GL_LINES, 0, len(self.lines))
+
         glBegin(GL_LINES)
 
-        for line in self.lines + self.metaLines + ([self.currentLine] if self.currentLine is not None else []):
-            # line.draw(self.qp)
-            line.draw()
+        for line in self.lines: # + self.metaLines + ([self.currentLine] if self.currentLine is not None else []):
+            line.draw(self.width, self.height)
 
         glEnd()
+        # glFlush()
+
+
+    def drawCurrentLine(self):
+        if self.currentLine is not None:
+            glBegin(GL_LINES)
+            # glColor(*clampColor(self.currentLineColor))
+            glColor(*clampColor(self.currentDrawColor))
+            glVertex(*self.currentLine.start.asGL().data())
+            glVertex(*self.focusLoc.asGL().data())
+            glEnd()
+
 
     def drawDots(self):
-        # self.qp.setPen(QColor(*self.dotColor))
-        glColor(*clamp(self.dotColor)
-        glBegin(GL_POINTS)
+        glColor(*clampColor(self.dotColor))
+        # bind the VBO
+        self.dotVbo.bind()
+        # tell OpenGL that the VBO contains an array of vertices
+        glEnableClientState(GL_VERTEX_ARRAY)
+        # these vertices contain 2 single precision coordinates
+        glVertexPointer(2, GL_FLOAT, 0, self.dotVbo)
+        # draw "count" points from the VBO
+        glDrawArrays(GL_POINTS, 0, len(self.dots))
 
-        for i in self.dots:
-            # self.qp.drawRect(QRect(*i.datai(), self.dotSize, self.dotSize))
-            # self.qp.drawPoint(*i.datai())
-            glVertex(*i.datai())
-            # self.qp.drawPoint(*i.datai())
 
-        glEnd()
-
-    def drawCircle(self, center, radius, filled=False, vertexCount=3):
+    def drawCircle(self, center, radius, filled=False, vertexCount=10):
         #* Create a buffer for vertex data
-        buffer = [] # = new float[vertexCount*2] # (x,y) for each vertex
-
+        # buffer = [] # = new float[vertexCount*2] # (x,y) for each vertex
+        # buffer = np.array([0]*vertexCount*2, np.float32)
+        glBegin(GL_LINE_LOOP)
         #* Center vertex for triangle fan
-        buffer.append(center.x)
-        buffer.append(center.y)
+        # buffer.append(center.x)
+        # buffer.append(center.y)
 
         #* Outer vertices of the circle
         outerVertexCount = vertexCount-1
 
         for i in range(outerVertexCount):
             percent = i / (outerVertexCount-1)
-            rad = percent * 2 * math.PI
+            rad = percent * 2 * math.pi
 
             #* Vertex position
             outer_x = center.x + radius * math.cos(rad)
-            outer_y = center.y + radius * math.sin(rad)
+            outer_y = center.y + radius * math.sin(rad) * 1.5
 
-            buffer.append(outer_x)
-            buffer.append(outer_y)
+            glVertex(outer_x, outer_y)
 
-        #* Create VBO from buffer with glBufferData()
-        if filled:
-            glDrawArrays(GL_TRIANGLE_FAN, 0, vertexCount)
-        else:
-            glDrawArrays(GL_LINE_LOOP, 2, outerVertexCount)
+        glEnd()
 
+        #     buffer.append(outer_x)
+        #     buffer.append(outer_y)
+
+        # #* Create VBO from buffer with glBufferData()
+        # if filled:
+        #     glDrawArrays(GL_TRIANGLE_FAN, 0, vertexCount)
+        # else:
+        #     glDrawArrays(GL_LINE_LOOP, 2, debugged(outerVertexCount))
 
 
     def drawFocus(self):
         # self.qp.setPen(QColor(*self.focusColor))
         # self.qp.drawEllipse(*(self.focusLoc-6).datai(), self.focusRadius, self.focusRadius)
-        glColor(*clamp(self.focusColor))
-        # self.drawCircle(self.focusLoc, self.focusRadius)
 
+        glBegin(GL_LINES)
+
+        glColor(*clampColor(self.focusColor))
+
+        glVertex(self.focusLoc.x - self.focusRadius, self.focusLoc.y             )
+        glVertex(self.focusLoc.x + self.focusRadius, self.focusLoc.y             )
+        # I'm not sure why this direction is shorter than the other.
+        glVertex(self.focusLoc.x,        self.focusLoc.y - self.focusRadius * 1.5)
+        glVertex(self.focusLoc.x,        self.focusLoc.y + self.focusRadius * 1.5)
+
+        # for offset in ((-2, -2), (2, 2), (-2, 2), (2, -2)):
+        #     self.drawPoint(self.focusLoc + offset)
+
+        glEnd()
+         # self.drawCircle(self.focusLoc, self.focusRadius)
 
 
     def drawBounds(self):
         # Just for optimization's sake
-        if len(self.boundsCircles):
-            self.qp.setPen(QColor(*self.boundsColor))
-            for i in self.boundsCircles:
-                self.qp.drawEllipse(*(i-5).datai(), self.focusRadius-2, self.focusRadius-2)
+        if len(self.bounds):
+            glColor(*clampColor(self.boundsColor))
+            for i in self.bounds:
+                self.drawCircle(i, self.focusRadius * .75)
 
-            if len(self.boundsCircles) >= 2:
-                self.qp.setPen(QColor(*self.boundsLineColor))
-                bounds = getLargestRect(self.boundsCircles)
-                self.qp.drawRect(bounds)
-
+            if len(self.bounds) >= 2:
+                glColor(*clampColor(self.boundsLineColor))
+                # glBegin(GL_QUADS)
+                glBegin(GL_LINE_LOOP)
+                bounds = getLargestRect(self.bounds)
+                glVertex(*Pointf(bounds.topLeft()).dataf())
+                glVertex(*Pointf(bounds.topRight()).dataf())
+                glVertex(*Pointf(bounds.bottomRight()).dataf())
+                glVertex(*Pointf(bounds.bottomLeft()).dataf())
+                glEnd()
 
     def drawMirroring(self):
         todo('mirroring')
@@ -416,7 +565,7 @@ class Paper(QOpenGLWidget):
 
 
             if self.mirroringStates[self.currentMirrorState] >= 2:
-                # self.startingPoint = Point(min(self.dots, key=lambda i:abs(i.x - (self.getSize()[0] / 2))).x + 1, min(self.dots, key=lambda i:abs(i.y - (self.getSize()[1] / 2))).y + 1)
+                # self.startingPoint = Point(min(self.dots, key=lambda i:abs(i.x - (self.width / 2))).x + 1, min(self.dots, key=lambda i:abs(i.y - (self.height / 2))).y + 1)
 
                 startx = self.startingPoint.x + (self.startingPoint.x - i.start.x) + 2
                 endx   = self.startingPoint.x + (self.startingPoint.x - i.end.x) + 2
@@ -464,7 +613,7 @@ class Paper(QOpenGLWidget):
 
 
     def export(self):
-        image = Image.new('RGB', self.getSize(), color=tuple(self.backgroundColor))
+        image = Image.new('RGB', (self.width, self.height), color=tuple(self.background))
         draw = ImageDraw.Draw(image)
         for line in self.lines:
             draw.line(line.start.data() + line.end.data(), fill=tuple(line.color), width=self.exportLineThickness)
@@ -473,7 +622,7 @@ class Paper(QOpenGLWidget):
         print('File Saved!')
 
 
-    def _new(self):
+    def new_(self):
         todo('_new')
 
 
@@ -484,26 +633,68 @@ class Paper(QOpenGLWidget):
 
 #* Repeat Functions
     def repeatPattern(self, pattern):
-        self.lines = pattern.repeat(QSize(self.getSize()[0] + self.dotSpread + self.offscreenAmount,
-                                          self.getSize()[1] + self.dotSpread + self.offscreenAmount),
+        # debug(pattern, self.width, self.height, self.dotSpread, self.offscreenAmount, self.overlap, self.includeHalfsies, self.bounds)
+        # debug(showFunc=True)
+        # raise UserError
+        self.lines = pattern.repeat((Sizei(self.width, self.height) / self.dotSpread) + 1,
+                                     self.centerPoint,
+                                    #  self.dotSpread / (self.height / 2),
                                      self.dotSpread,
-                                     self.dots[0] % self.dotSpread,
+                                     #  self.dots[0] % self.dotSpread,
                                      self.overlap,
                                      self.includeHalfsies)
 
-        self.boundsCircles = []
+        self.bounds = []
 
+
+    def getLinesWithinRect(self, bounds: QRectF):
+        lines = []
+
+        # debug(self.lines, color=3, showFile=True)
+
+        for l in self.lines:
+            #* You suck
+            # if bounds.contains(*l.start.datai()) and bounds.contains(*l.end.datai()):
+            if collidePoint(Pointf(bounds.topLeft()), (bounds.width(), bounds.height()), l.start) and \
+               collidePoint(Pointf(bounds.topLeft()), (bounds.width(), bounds.height()), l.end):
+                lines.append(l)
+
+        return lines
+
+
+    def getHalfLinesWithinRect(self, bounds: QRectF):
+        lines = []
+
+        for l in self.lines:
+            if bounds.contains(*l.start.asTL().data()) or  bounds.contains(*l.end.asTL().data()) and not \
+              (bounds.contains(*l.start.asTL().data()) and bounds.contains(*l.end.asTL().data())):
+                lines.append(l)
+
+        return lines
+
+
+    def getPattern(self):
+        if len(self.bounds) < 2:
+            raise UserWarning('I\'m sorry Dave, but I can\'t do that.')
+
+        bounds = getLargestRect([b.asTL() for b in self.bounds])
+        # return debugged(Pattern(self.getLinesWithinRect(bounds), self.getHalfLinesWithinRect(bounds), self.dotSpread / (self.height / 2), bounds))
+        return Pattern(self.getLinesWithinRect(bounds), self.getHalfLinesWithinRect(bounds), self.dotSpread, self.centerPoint, bounds)
 
 
 #* Other Functions
     def createLine(self, linkAnother=False):
         if self.currentLine is None:
-            self.currentLine = Line(self.focusLoc, color=self.currentDrawColor)
+            self.currentLine = Line(self.lineVboIndex, deepcopy(self.focusLoc), color=self.currentDrawColor)
+            # self.lineVboIndex += Line.vboSize
         else:
-            self.currentLine.finish(self.focusLoc)
-            # self.lineBuffer.append(self.currentLine)
-            self.lines.append(self.currentLine)
-            self.currentLine = Line(self.focusLoc, color=self.currentDrawColor) if linkAnother else None
+            if self.currentLine.start == self.focusLoc:
+                self.currentLine = None
+            else:
+                self.currentLine.finish(self.focusLoc.copy(), self.width, self.height)
+                self.lines.append(self.currentLine)
+                self.currentLine = Line(self.lineVboIndex, deepcopy(self.focusLoc), color=self.currentDrawColor) if linkAnother else None
+                # self.lineVboIndex += Line.vboSize
 
 
     def deleteLine(self, at=None):
@@ -523,13 +714,29 @@ class Paper(QOpenGLWidget):
                 if i.start == at or i.end == at:
                     linesStillAtFocus = True
 
-        for i in self.boundsCircles:
+        # You can't change the size of a set while iterating through it for some reason
+        #   Hence, copy().
+        for i in self.bounds.copy():
             if i == at:
-                self.boundsCircles.remove(i)
+                self.bounds.remove(i)
 
         self.currentLine = None
 
         self.update()
+
+
+    def resizeGL(self, width, height):
+        """Called upon window resizing: reinitialize the viewport.
+        """
+        # update the window size
+        self.width, self.height = width, height
+        # paint within the whole window
+        glViewport(0, 0, width, height)
+        # set orthographic projection (2D only)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        # the window corner OpenGL coordinates are (-+1, -+1)
+        glOrtho(-1, 1, 1, -1, -1, 1)
 
 
     def mirror(self):
@@ -543,12 +750,12 @@ class Paper(QOpenGLWidget):
 
         if self.mirroringStates[self.currentMirrorState] in [1, 4]:
             starth = Pointi(-self.offScreenAmount, self.startingPoint.y)
-            endh   = Pointi(self.getSize()[0] + self.offScreenAmount, self.startingPoint.y)
+            endh   = Pointi(self.width + self.offScreenAmount, self.startingPoint.y)
             self.metaLines.append(Line(starth, endh, MIRROR_LINE_COLOR))
 
         if self.mirroringStates[self.currentMirrorState] >= 2:
             startv = Pointi(self.startingPoint.x, -self.offScreenAmount)
-            endv   = Pointi(self.startingPoint.x, self.getSize()[1] + self.offScreenAmount)
+            endv   = Pointi(self.startingPoint.x, self.height + self.offScreenAmount)
             self.metaLines.append(Line(startv, endv, MIRROR_LINE_COLOR))
 
 
@@ -556,26 +763,6 @@ class Paper(QOpenGLWidget):
         # todo('toggleBoundsMode')
         # self.boundsMode = not self.boundsMode
         self.addBound()
-
-
-    def getLinesWithinRect(self, bounds):
-        lines = []
-
-        for l in self.lines:
-            if bounds.contains(*l.start.datai()) and bounds.contains(*l.end.datai()):
-                lines.append(l)
-
-        return lines
-
-
-    def getHalfLinesWithinRect(self, bounds):
-        lines = []
-
-        for l in self.lines:
-            if bounds.contains(*l.start.datai()) or bounds.contains(*l.end.datai()):
-                lines.append(l)
-
-        return lines
 
 
     def undo(self):
@@ -598,20 +785,49 @@ class Paper(QOpenGLWidget):
 
     def clearAll(self):
         self.lines = []
-        self.boundsCircles = []
-        self.lineBuffer = []
+        self.bounds = set()
         self.currentLine = None
         self.metaLines = []
 
 
     def addBound(self):
-        self.boundsCircles += (Pointi(self.focusLoc),)
+        self.bounds.add(self.focusLoc.copy())
         self.update()
 
 
-    def updateSettings(self, dialog):
-        debug(showFunc=True)
-        # self.dotSpread =
+    def updateSettings(self, settings):
+        # keyRepeatDelay
+        # keyIntervalDealy
+
+        # shortcutBox
+        # shortcutSelect
+        # setShortcut
+
+        self.dotSpread = settings.dotSpread.value()
+        self.dotSpreadMeasure = settings.dotSpreadMeasure.value()
+        self.dotSpreadUnit = settings.dotSpreadUnit.text()
+
+        self.background = settings.backgroundColor.getColor()
+        self.dotColor = settings.dotColor.getColor()
+        self.focusColor = settings.focusColor.getColor()
+
+        self.exportThickness = settings.exportThickness.value()
+        self.savePath = settings.savePath.text()
+        self.exportPath = settings.exportPath.text()
+
+        self.doReset = True
+        # glClearColor(*clampColor(*self.backgroundColor), 1)
+        # debug(glGetFloatv(GL_COLOR_CLEAR_VALUE), name='background color', color=2)
+        self.update()
+
+
+    def setCurrentDrawColor(self, color):
+        self.currentDrawColor = color
+
+
+    def setShowLen(self, val):
+        self.showLen = val
+        self.update()
 
 
     def exit(self):

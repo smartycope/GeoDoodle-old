@@ -1,8 +1,10 @@
+# from Point import Pointf, Pointi, Point
 from random import randint
 import math, re
 from time import process_time
 from typing import Callable, Any, Iterable, Optional, Union
 import atexit
+# from Point import Pointf
 
 from os.path import dirname, join
 DIR  = dirname(dirname(__file__))
@@ -43,15 +45,6 @@ def hideAllTodos(to=True):
 colors = ['0', '34', '32', '33', '35', '36', '31']
 
 
-def clamp(*rgba):
-    """ Clamp a 0-255 color to a float between 1 and 0.
-        Helpful for openGL commands.
-    """
-    if len(rgba) == 1 and type(rgba[0]) in (tuple, list):
-        return [c / 255 for c in rgba[0]]
-    else:
-        return [c / 255 for c in rgba]
-
 
 # https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 def _printColor(r, g, b, fg=True):
@@ -85,7 +78,7 @@ def _resetColor():
     print('\033[0m',  end='')
     print('\033[39m', end='')
     print('\033[49m', end='')
-    print('_', end='')
+    # print(, end='')
 
     # try:
     #     # print('\033[39m', end='')
@@ -139,6 +132,8 @@ def _getListStr(v: Union[tuple, list, set, dict], limitToLine: bool=True, minIte
     if type(v) in (tuple, list, set) and len(v) > minItems:
         from os import get_terminal_size
         from copy import deepcopy
+        if type(v) is set:
+            v = tuple(v)
 
         ellipsis = f', \033[0m...\033[{colors[color]}m '
         length = f'(len={len(v)})'
@@ -179,7 +174,7 @@ def _getTypename(var):
         while type(var) in (tuple, list, set):
             try:
                 var = var[0]
-            except (KeyError, IndexError):
+            except (KeyError, IndexError, TypeError):
                 returnMe += '('
                 break
             returnMe += '(' + type(var).__name__
@@ -202,18 +197,18 @@ def _printLink(filename, lineNum, function=None):
         if function is None: #    \|/  Oddly enough, this double quote is nessicary
             print('\t', filename, '", line ', lineNum, '\033[0m', sep='')
         else:
-            print('File "', filename, '", line ', lineNum, ', in ', function, sep='')
+            print('\tFile "', filename, '", line ', lineNum, ', in ', function, sep='')
 
         _resetColor()
     finally:
         _resetColor()
     _resetColor()
-    print('\033[0m', '|', end='')
+    print('\033[0m', end='')
 
 
-def basicColoredPrint(string, color, fg):
+def basicColoredPrint(string, color, fg, **kwargs):
     printBasicColor(color, fg=fg)
-    print(string)
+    print(string, **kwargs)
     _resetColor()
 
 
@@ -277,6 +272,7 @@ def getVarName(useBackup=True, calls=0, full=True, customMetaData=None):
 
 class _None(): pass
 
+# TODO: somehow round any float to a given length, including those printed in iterables
 # TODO make it so if the first is a variable you can't get (or just any variable), and the
 #   second is a string literal, set the string literal as the name of the first variable
 # TODO If there's multiple variables passed in, and it cant get one of them, it gives up.
@@ -345,9 +341,9 @@ def debug(var=None, *more_vars, name=None, merge: bool=False, repr: bool=False, 
     #* Only print the "HERE! HERE!" message
     if var is None:
         _printDebugCount()
-        basicColoredPrint(context + 'HERE! HERE!', -1 if color is None else color, fg=not background)
-        if clickable or DISPLAY_LINK:
-            _getLink(customMetaData=metaData)
+        basicColoredPrint(context + 'HERE! HERE!', -1 if color is None else color, fg=not background, end='')
+        # if clickable or DISPLAY_LINK:
+        _getLink(customMetaData=metaData)
         return
 
 
@@ -426,7 +422,7 @@ def debug(var=None, *more_vars, name=None, merge: bool=False, repr: bool=False, 
 
 
 
-def debugged(var=_None, name=None, merge: bool=False, repr: bool=False, calls: int=0,
+def debugged(var=_None, name=None, merge: bool=False, repr: bool=False, calls: int=1,
              color: int=None, background: bool=False, showFunc: bool=False, showFile: bool=False,
              limitToLine: bool=True, minItems: int=2, maxItems: int=10, clickable: bool=False):
     """ An inline version of debug
@@ -538,7 +534,9 @@ def rotatePoint(p, angle, pivotPoint, radians = False):
 
 
 def getMidPoint(p1, p2):
-    return Pointf((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+    assert type(p1) == type(p2)
+    # return Pointf((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+    return p1._initCopy((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
 
 
 timingData = {}
@@ -570,7 +568,7 @@ def timeFunc(func, accuracy=5):
     return wrap
 
 
-#* I realized *after* I wrote this that this is a profiler. Oops.
+#* I realized *after* I wrote this that this is a essentially profiler. Oops.
 def _printTimingData(accuracy=5):
     global timingData
     if len(timingData):
@@ -626,7 +624,7 @@ def isBetween(val, start, end, beginInclusive=False, endInclusive=False):
 
 
 
-def collidePoint(topLeft, size, target, inclusive=True):
+def collidePoint(topLeft: 'Point', size: Union[tuple, list], target, inclusive=True):
     return isBetween(target.x, topLeft.x, size[0], beginInclusive=inclusive, endInclusive=inclusive) and \
            isBetween(target.y, topLeft.y, size[1], beginInclusive=inclusive, endInclusive=inclusive)
 
@@ -655,9 +653,50 @@ def darken(rgb, amount):
     return tuple([constrain(i+amount, 0, 255) for i in rgb])
 
 
+'''
+def tlOriginToCenterOrigin(p: Point, width, height):
+    return Pointf(p.x - (width / 2), p.y - (height / 2))
+'''
+
+'''
+def clampPoint(p: Point, width, height):
+    return p._initCopy(p.x / (width / 2), p.y / (height / 2))
+'''
 
 
+def clampColor(*rgba):
+    """ Clamp a 0-255 color to a float between 1 and 0.
+        Helpful for openGL commands.
+    """
+    if len(rgba) == 1 and type(rgba[0]) in (tuple, list):
+        return tuple(c / 255 for c in rgba[0])
+    else:
+        return tuple(c / 255 for c in rgba)
 
+
+def invertColor(*rgba):
+    """ Inverts a color
+    """
+    if len(rgba) == 1 and type(rgba[0]) in (tuple, list):
+        return tuple(255 - c for c in rgba[0])
+    else:
+        return tuple(255 - c for c in rgba)
+
+'''
+def toOpenGLCoord(p: Point, width, height):
+    return Pointf((p.x - (width / 2)) / (width / 2), (p.y - (height / 2)) / (height / 2))
+'''
+'''
+def toTLCoord(p: Point, width, height):
+    return Pointi((p.x * (width / 2)) + (width / 2), (p.y * (height / 2)) + (height / 2))
+'''
+
+def translate(value, fromStart, fromEnd, toStart, toEnd):
+    return ((abs(value - fromStart) / abs(fromEnd - fromStart)) * abs(toEnd - toStart)) + toStart
+
+
+def frange(start, stop, skip=1.0, accuracy=10000000000000000):
+    return [x / accuracy for x in range(int(start*accuracy), int(stop*accuracy), int(skip*accuracy))]
 
 
 
