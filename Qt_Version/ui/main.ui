@@ -42,10 +42,10 @@
    <widget class="Paper" name="paper">
     <property name="geometry">
      <rect>
-      <x>-1</x>
-      <y>-1</y>
+      <x>0</x>
+      <y>0</y>
       <width>801</width>
-      <height>621</height>
+      <height>551</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -76,6 +76,9 @@
      <bool>true</bool>
     </property>
     <property name="acceptDrops">
+     <bool>true</bool>
+    </property>
+    <property name="autoFillBackground">
      <bool>true</bool>
     </property>
    </widget>
@@ -131,6 +134,9 @@
     <addaction name="creditsMenu"/>
     <addaction name="licenseMenu"/>
     <addaction name="donateMenu"/>
+    <addaction name="statusMenu"/>
+    <addaction name="separator"/>
+    <addaction name="aboutQt"/>
    </widget>
    <widget class="QMenu" name="menuPattern">
     <property name="title">
@@ -357,6 +363,16 @@
    </property>
    <property name="shortcut">
     <string>L</string>
+   </property>
+  </action>
+  <action name="statusMenu">
+   <property name="text">
+    <string>Bugs/Features</string>
+   </property>
+  </action>
+  <action name="aboutQt">
+   <property name="text">
+    <string>About Qt</string>
    </property>
   </action>
  </widget>

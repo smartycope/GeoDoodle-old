@@ -221,8 +221,11 @@ class TLPoint(CoordPoint):
             width = self.width
         if not height:
             height = self.height
-        return GLPoint(translate(self.x, 0, width,  -1, 1),
-                       translate(self.y, 0, height, -1, 1),
+        # return GLPoint(translate(self.x, 0, width,  -1, 1),
+                    #    translate(self.y, 0, height, -1, 1),
+                    #    width, height)
+        return GLPoint((self.x - (width  / 2)) / (width  / 2),
+                       (self.y - (height / 2)) / (height / 2),
                        width, height)
     def asInf(self, centerDot, dotSpread):
         return InfPoint((self.x - centerDot.x) / dotSpread,
@@ -285,13 +288,16 @@ class InfPoint(CoordPoint):
                        width, height)
     def asGL(self, width, height):
         return self.asTL(width, height).asGL(width, height) # I'm really lazy
+        # return GLPoint((self.x * self.dotSpread) + self.centerDot.x,
+                    #    (self.y * self.dotSpread) + self.centerDot.y,
+                    #    width, height)
     def asInf(self, centerDot=None, dotSpread=None):
         if not centerDot:
             centerDot = self.centerDot
         if not dotSpread:
             dotSpread = self.dotSpread
-        return InfPoint(self.x + (self.centerDot.x - centerDot.x),
-                        self.y + (self.centerDot.y - centerDot.y),
+        return InfPoint(self.x, # + (self.centerDot.x - centerDot.x),
+                        self.y, # + (self.centerDot.y - centerDot.y),
                         centerDot, dotSpread)
 
 
@@ -315,8 +321,8 @@ def isAdj(p1, p2):
 def dist(p1, p2):
     return math.hypot(p2.x - p1.x, p2.y - p1.y)
 
-'''
 
+'''
 from Cope import debug
 
 w=100
@@ -346,12 +352,23 @@ assert tlp.asTL(w, h)    == tlp.asTL()  == TLPoint(20, 30, w, h)
 assert glp.asGL(w, h)    == glp.asGL()  == GLPoint(-.2, .6, w, h)
 assert ifp.asInf(cd, ds) == ifp.asInf() == InfPoint(-3, 5, cd, ds)
 
-debug(tlp.asGL(w, h))
-debug(tlp.asInf(cd, ds))
+# debug(tlp.asGL(w, h))
+# debug(TLPoint(200, -125, w, h).asGL(w, h))
+# debug(tlp.asInf(cd, ds))
 
-debug(glp.asTL(w, h))
-debug(glp.asInf(cd, ds)) #
+# debug(glp.asTL(w, h))
+# debug(glp.asInf(cd, ds)) #
 
-debug(ifp.asTL(w, h))
-debug(ifp.asGL(w, h))
+# debug(ifp.asTL(w, h))
+# debug(ifp.asGL(w, h))
+
+
+cd2 = cd + 5
+debug(cd2)
+
+ds2=12
+
+
+debug(ifp.asInf(cd, ds))
+debug(ifp.asInf(cd2, ds2))
 '''

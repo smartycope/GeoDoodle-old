@@ -86,7 +86,7 @@ def genOnionLayer(dist, spread, origin, drawX=True, drawY=True):
     return points
 
 
-def genDotArrayPoints(size, offScreenAmount, dotSpread, startPoint=Pointi(0, 0)):
+def genDotArrayPoints(size, dotSpread): #, startPoint=Pointi(0, 0)):
     # debug(dotSpread, size, offScreenAmount, startPoint, color=-1)
     #* The top-left corner-centric way of generating dots
     # dots = []
@@ -98,8 +98,8 @@ def genDotArrayPoints(size, offScreenAmount, dotSpread, startPoint=Pointi(0, 0))
     #* The center-centric way of generating dots
     points = []
 
-    xDist = int(size[0] / (dotSpread - offScreenAmount))
-    yDist = int(size[1] / (dotSpread - offScreenAmount))
+    xDist = int(size[0] / dotSpread)
+    yDist = int(size[1] / dotSpread)
 
     values = sorted([xDist, yDist])
 

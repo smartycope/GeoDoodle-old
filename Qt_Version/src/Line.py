@@ -21,7 +21,7 @@ from typing import Union
 
 @reprise
 class Line:
-    vboSize = 7
+    vboSize = 4
     def __init__(self, vboIndex: int, start, end=None, color: Union[list, tuple]=None, hidden=False):
         self.start = start
         if end == None:
@@ -34,12 +34,66 @@ class Line:
         self.index = vboIndex
         self.label = None
 
-    def finish(self, loc, width, height, color=None):
-        # glEnableClientState(GL_VERTEX_ARRAY)
-        # glBufferSubData(GL_ARRAY_BUFFER, self.index, self.data(width, height))
-        self.end = loc
-        if self.color is None:
+    def finish(self, loc, width, height, vbo, colorVbo, lines, color=None):
+        if not self.color:
             self.color = color
+
+        self.end = loc
+
+        # vbo.bind()
+        # tell OpenGL that the VBO contains an array of vertices
+        # glEnableClientState(GL_VERTEX_ARRAY)
+        # these vertices contain 2 single precision coordinates
+        # glVertexPointer(2, GL_FLOAT, 0, vbo)
+        # draw "count" points from the VBO
+        # glDrawArrays(GL_POINTS, 0, len(self.dots))
+        # glBufferSubData(GL_ARRAY_BUFFER, self.index, self.vboSize * 32, self.data(width, height))
+        # vbo.write(self.index, self.data(width, height), self.vboSize)
+
+        # // bind then map the VBO
+        # glBindBuffer(GL_ARRAY_BUFFER, vboId)
+        # vbo.bind()
+        # data = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY)
+        # assert data
+        # # // if the pointer is valid(mapped), update VBO
+        # data.
+        # updateMyVBO(ptr, ...)
+
+        # glUnmapBuffer(GL_ARRAY_BUFFER)
+
+        lineData  = ()
+        colorData = ()
+        for i in lines:
+            lineData += i.data(width, height)
+            colorData += clampColor(i.color)
+
+        debug(colorData, minItems=10)
+
+        vbo.bind()
+
+        # glEnableClientState(GL_VERTEX_ARRAY)
+
+        #* BufferSubData
+        # glBufferSubData(GL_ARRAY_BUFFER, 12, 8 * 32, newData)
+
+        #* MapBuffer
+        # data = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE)
+        # debug(pointer(data))
+        # debug(data)
+
+        #* BufferData
+        glBufferData(GL_ARRAY_BUFFER, np.asarray(lineData + self.data(width, height), np.float32), GL_DYNAMIC_DRAW)
+
+        glDisableClientState(GL_VERTEX_ARRAY)
+        vbo.unbind()
+
+        colorVbo.bind()
+
+        # glEnableClientState(GL_COLOR_ARRAY)
+
+        glBufferData(GL_ARRAY_BUFFER, np.asarray(colorData + clampColor(self.color)), GL_DYNAMIC_DRAW)
+
+
 
     def isFinished(self):
         return self.end != None
@@ -85,8 +139,8 @@ class Line:
     def getDist(self):
         return dist(self.start.asTL(), self.end.asTL())
 
-    # def data(self):
-        # return np.array(self.start.dataf() + self.end.dataf() + clampColor(self.color), np.float32)
+    def data(self, width, height):
+        return self.start.asGL(width, height).data() + self.end.asGL(width, height).data() # + clampColor(self.color)
 
     def getLen(self, dotSpread, multiplier):
         return (self.getDist() / dotSpread) * multiplier

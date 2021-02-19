@@ -36,7 +36,7 @@ from Point import CoordPoint, TLPoint, GLPoint, InfPoint
 
 # BACKGROUND_COLOR = (200, 160, 100)
 
-#* How much we're allowed to seperate patterns * their size
+#* How much we're allowed to seperate patterns * their size - depricated
 MAX_SPREAD_MULTIPLIER = 2
 QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 
@@ -45,13 +45,7 @@ class Game(QMainWindow):
     def __init__(self):
         super(Game, self).__init__()
         uic.loadUi(join(UI, "main.ui"), self)
-        # pygame.init()
-
-        #* Set the icon
-        #  with open(DIR + 'data/' + self.settings['iconFile'], 'r') as icon:
-            # pygame.display.set_icon(pygame.image.load(icon))
-
-        #* Set the name of the window
+        self.setWindowTitle('GeoDoodle')
 
         #* Set key repeat
 
@@ -132,12 +126,16 @@ class Game(QMainWindow):
         self.creditsMenu.triggered.connect(self._creditsMenu)
         self.licenseMenu.triggered.connect(self._licenseMenu)
         self.donateMenu.triggered.connect(self._donateMenu)
-
+        self.statusMenu.triggered.connect(self._statusMenu)
+        self.aboutQt.triggered.connect(lambda *_: QMessageBox.aboutQt(None))
         # tb.actionTriggered[QAction].connect(self.toolbtnpressed)
 
 
     def _preferencesMenu(self):
         self.optionsMenu = uic.loadUi(join(UI, "preferences.ui"))
+        self.setWindowTitle('Preferences')
+        self.setModal(True)
+        # self.optionsMenu
         # self.shortCuts = {}
 
         def restoreDefaults():
@@ -350,18 +348,52 @@ class Game(QMainWindow):
 
     def _repeatMenu(self):
         class PatternMenu(QDialog):
-            def __init__(self, *args, **kwargs):
+            def __init__(self, *args, pattern=None, **kwargs):
                 super().__init__(*args, **kwargs)
+                assert pattern
                 uic.loadUi(join(UI, "repeat.ui"), self)
-                self.pattern = None
+                self.pattern = pattern
+
+                self.setWindowTitle('Repeat Pattern')
+                self.setModal(True)
+
+                #* Set the minimum values for the sliders
+                self.xOffset.setMinimum(-self.pattern.size[0] + 1)
+                self.yOffset.setMinimum(-self.pattern.size[1] + 1)
+
+                #* If you want to by default set the new color to black
+                self.paper.currentDrawColor = (0, 0, 0)
+
+                #* Connect the sliders manually, since they have nessicary parameters
                 self.xOffset.sliderMoved.connect(lambda pos: self.update(xpos=pos))
                 self.yOffset.sliderMoved.connect(lambda pos: self.update(ypos=pos))
-                self.okCancel.accepted.connect(self.update)
+
+                #* Fill the flip drop down menus
+                self.flipRowOrientation.addItems(('None', 'Vertically', 'Horizontally'))
+                self.flipColumnOrientation.addItems(('None', 'Vertically', 'Horizontally'))
+
+                #*// Connect the drop down menus
+
+                #* Connect the restore defaults button
                 self.restoreDefaults.clicked.connect(self.setDefaults)
+
+
                 #* I SHOULDN'T HAVE TO DO THIS.
                 self.paper.width = 402
                 self.paper.height = 318
+
                 self.paper.setGeometry(0, 0, 402, 318)
+
+                #* Connect the ok button
+                self.okCancel.accepted.connect(self.update)
+
+                # self.paper.currentLine = Line(0, GLPoint(-1, -1, *self.paper.s), color=(0, 0, 0))
+                # self.paper.currentLine.finish(GLPoint(-1, -1, *self.paper.s), *self.paper.s, self.paper.lineVbo, self.paper.lines)
+
+                # self.paper.reset()
+                self.paper.doReset = True
+                self.update()
+                self.show()
 
             @pyqtSlot()
             def update(self, xpos=None, ypos=None):
@@ -371,8 +403,12 @@ class Game(QMainWindow):
                 if ypos is None:
                     ypos = self.yOffset.value()
 
+                # debug(self.paper.lines, self.paper.width, self.paper.height)
+
                 # debug(self.paper.size(), color=2)
                 self.paper.reset()
+
+                # self.paper.resetLineVbo()
 
                 #* Update all of the pattern options in paper
                 self.paper.overlap = (xpos, ypos)
@@ -381,6 +417,10 @@ class Game(QMainWindow):
                 self.paper.rowSkipAmount = self.rowSkipAmount.value()
                 self.paper.columnSkip = self.columnSkip.value()
                 self.paper.columnSkipAmount = self.columnSkipAmount.value()
+                self.paper.flipRow = self.flipRow.value()
+                self.paper.flipRowOrientation = self.flipRowOrientation.currentText()
+                self.paper.flipColumn = self.flipColumn.value()
+                self.paper.flipColumnOrientation = self.flipColumnOrientation.currentText()
 
                 self.paper.update()
                 self.paper.repeatPattern(self.pattern)
@@ -393,20 +433,25 @@ class Game(QMainWindow):
 
                 self.paper.overlap = (0, 0)
                 self.paper.includeHalfsies = True
-                self.paper.rowSkip = 0
+                self.paper.rowSkip = 1
                 self.paper.rowSkipAmount = 0
-                self.paper.columnSkip = 0
+                self.paper.columnSkip = 1
                 self.paper.columnSkipAmount = 0
+
+                self.paper.flipRow = 1
+                self.paper.flipRowOrientation = 'None'
+                self.paper.flipColumn = 1
+                self.paper.flipColumnOrientation = 'None'
 
                 self.xOffset.setSliderPosition(0)
                 self.yOffset.setSliderPosition(0)
 
                 self.includeHalfsies.setChecked(True)
 
-                self.rowSkip.setValue(0)
+                self.rowSkip.setValue(1)
                 self.rowSkipAmount.setValue(0)
+                self.columnSkip.setValue(1)
                 self.columnSkipAmount.setValue(0)
-                self.columnSkip.setValue(0)
 
 
         if len(self.paper.bounds) > 1:
@@ -416,50 +461,135 @@ class Game(QMainWindow):
                 debug(err, color=-1)
                 return
 
-            self.patternMenu = PatternMenu(self)
-            self.patternMenu.pattern = pattern
+            def transferSettings():
+                self.paper.overlap = self.patternMenu.paper.overlap
+                self.paper.includeHalfsies = self.patternMenu.paper.includeHalfsies
+                self.paper.rowSkip = self.patternMenu.paper.rowSkip
+                self.paper.rowSkipAmount = self.patternMenu.paper.rowSkipAmount
+                self.paper.columnSkip = self.patternMenu.paper.columnSkip
+                self.paper.columnSkipAmount = self.patternMenu.paper.columnSkipAmount
+                self.paper.flipRow = self.patternMenu.paper.flipRow
+                self.paper.flipRowOrientation = self.patternMenu.paper.flipRowOrientation
+                self.paper.flipColumn = self.patternMenu.paper.flipColumn
+                self.paper.flipColumnOrientation = self.patternMenu.paper.flipColumnOrientation
 
-            #* If you want to by default set the new color to black
-            self.patternMenu.paper.currentDrawColor = (0, 0, 0)
-
-            # patternSize = self.patternMenu.pattern.getSize(self.paper.dotSpread / self.paper.height).size()
-
-            self.patternMenu.xOffset.setMinimum(-self.patternMenu.pattern.size[0] + 1)
-            self.patternMenu.yOffset.setMinimum(-self.patternMenu.pattern.size[1] + 1)
-            # self.patternMenu.xOffset.setMaximum(self.patternMenu.pattern.size[0] * MAX_SPREAD_MULTIPLIER)
-            # self.patternMenu.yOffset.setMaximum(self.patternMenu.pattern.size[1] * MAX_SPREAD_MULTIPLIER)
-            self.patternMenu.xOffset.setMaximum(5)
-            self.patternMenu.yOffset.setMaximum(5)
-            # self.patternMenu.xOffset.setSliderPosition(self.patternMenu.pattern.size[0])
-            # self.patternMenu.yOffset.setSliderPosition(self.patternMenu.pattern.size[1])
-
+            self.patternMenu = PatternMenu(self, pattern=pattern)
+            self.patternMenu.okCancel.accepted.connect(transferSettings)
             self.patternMenu.okCancel.accepted.connect(lambda: self.paper.repeatPattern(self.patternMenu.pattern))
-
-            # self.patternMenu.paper.reset()
-            self.patternMenu.update()
-            self.patternMenu.show()
 
 
     def _controlsMenu(self):
-        todo('controlsMenu')
+        controls = 'Important Controls:\n'\
+        '\n'\
+        'Left click/space bar: start/finish a line\n'\
+        'Right click/c: start/finish a line and start a new one\n'\
+        'Middle click/q: delete bound or lines (for now, will eventually switch to moving the pattern)\n'\
+        'Scroll: zoom in/out (not implemented yet)\n'\
+        'o: open the preferences menu\n'\
+        'Q: delete all lines\n'\
+        'b: add a bound\n'\
+        'r: repeat the lines in the selected area across the screen\n'\
+        'l: toggle line lengths\n'\
+        'm: mirror lines (not implemented yet)\n'\
+        't: toggle color toolbar (works, but colors are currently broken)\n'\
+        'f: toggle fullscreen (not implemented yet)\n'\
+        'ctrl+s: save the pattern for later editing\n'\
+        'ctrl+o: open a saved pattern\n'\
+        'ctrl+n: make a new pattern (not implemeted yet)\n'\
+        'ctrl+shift+s: save as (not implemented yet)\n'\
+        'ctrl+e: export pattern as an image (I don\'t think this works. I haven\'t tried.)\n'\
+        'ctrl+z: undo (not implemented yet)\n'\
+        'ctrl+y: redo (not implemented yet)\n'\
+        'Esc: exit'
 
+        QMessageBox.information(None, 'Controls', controls)
 
     def _aboutMenu(self):
-        todo('aboutMenu')
+        about = 'Welcome to GeoDoodle!\n'\
+        'GeoDoodle is a graph paper-like doodling program. At least, that\'s what it was originally intended for. '\
+        'It turned out to be useful for things from quilting to landscaping, and I\'ve tried to include features for each.\n'\
+        '\n'\
+        'If you have any problems, if it crashes, if something doesn\'t work how you like it to, or you have ideas for it, '\
+        'please let me know so I can fix it or add it in. This is the alpha test, so I would love your feedback. '\
+        'Just text or email me at smartycope@gmail.com / (208)513-0110\n'\
+        '\n'\
+        'If you just found this and are completely bamboozled as to how to do anything with it, check out the controls menu.\n'\
+        '\n'\
+        'If you don\'t think it\'s complete garbage, check out the donate menu. College is expensive.\n'\
+        '\n'\
+        'If you are a programmer and you like it so much you\'d like to contribute, go for it. My GitHub username is smartycope.\n'\
+        'Enjoy!'
 
+        # QMessageBox.information(None, 'About', about)
+        QMessageBox.about(None, 'About', about)
 
     def _creditsMenu(self):
-        todo('creditsMenu')
+        credits = 'This magnificent program is brought to you by: \n'\
+        'Copeland Carter, Eng.\n'\
+        '\n'\
+        'I would also like to thank Brigham Keys, for answering all my dumb questions, and my parents for, you know, raising me.\n'\
+        '\n'\
+        'Hi Liam!'
 
+        QMessageBox.about(None, 'Credits', credits)
 
     def _licenseMenu(self):
-        todo('licenseMenu')
+        l = 'This software is licensed under the GPL3.0.\n'\
+        'This means it is free and open-source software\n'\
+        'This just means you can do whatever the heck you want with it.\n'\
+        'If you really want to, you can learn more about it here: https://www.gnu.org/licenses/gpl-3.0.en.html'
 
+        QMessageBox.about(None, 'License', l)
 
     def _donateMenu(self):
-        todo('donateMenu')
+        donate = 'While this software is free, I am a poor college student who likes to eat.\n'\
+        'Like, preferably regularly.\n'\
+        'So if you liked this program and can spare change for some ramen noodles, Venmo me some money at @Copeland-Carter\n'\
+        'I\'d greatly appreciate it.'
+
+        QMessageBox.about(None, 'Donate', donate)
+
+    def _statusMenu(self):
+        status = 'If you have any ideas or problems, text or email me at smartycope@gmail.com / (208)513-0110\n'\
+        '\n'\
+        'What works, what does\'t, and what\'s on the todo list \n'\
+        '(in no particular order):\n'\
+        'What works:\n'\
+        'Drawing lines (you have to start somewhere)\n'\
+        'Repeating patterns\n'\
+        'Offsetting rows/columns\n'\
+        'Flipping rows/columns\n'\
+        'Saving patterns\n'\
+        'Opening patterns\n'\
+        'The preferences menu\n'\
+        'Length labels\n'\
+        'Changing the dot color\n'\
+        'Changing the focus color\n'\
+        'Changing the background color\n'\
+        'The color toolbar\n'\
+        '\n'\
+        'What should work, but doesn\'t:\n'\
+        'The induvidual line colors\n'\
+        'Exporting patterns to images\n'\
+        'Setting the background to be an image\n'\
+        'The easter egg ;)\n'\
+        '\n'\
+        'Features I\'m planning to add eventually:\n'\
+        'Setting the background to be a pretty gradient\n'\
+        'Setting the background to be a satalite view of a property\n'\
+        'More cool features in that direction (like hooking up to GIS data to get property lines and accurate measurements)\n'\
+        'Moving the pattern/page around\n'\
+        'Scaling the pattern/page\n'\
+        'Customizable key repeat/interval delay\n'\
+        'Customizable controls\n'\
+        'Mirroring\n'\
+        'Split the vertical and horizontal drop down menus into buttons, so you can do both\n'\
+        'Lots of more things that I can\'t think of at the moment, but I know I\'ve had the idea for.'
+
+        QMessageBox.about(None, 'Status', status)
 
 
+    def meme():
         url = QtCore.QUrl.fromLocalFile('/home/marvin/Downloads/Rick-Astley-Never-Gonna-Give-You-Up.mp3')
         content = QtMultimedia.QMediaContent(url)
         player = QtMultimedia.QMediaPlayer()

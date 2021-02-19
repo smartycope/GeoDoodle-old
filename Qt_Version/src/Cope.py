@@ -279,7 +279,7 @@ class _None(): pass
 #   Call the varname function seperately for each variable.
 def debug(var=None, *more_vars, name=None, merge: bool=False, repr: bool=False, calls: int=1,
           color: int=None, background: bool=False, showFunc: bool=False, showFile: bool=False,
-          limitToLine: bool=True, minItems: int=2, maxItems: int=10, clickable: bool=False,
+          limitToLine: bool=True, minItems: int=4, maxItems: int=10, clickable: bool=False,
           _tries: int=0) -> None:
     """Print variable names and values for easy debugging.
 
@@ -424,7 +424,7 @@ def debug(var=None, *more_vars, name=None, merge: bool=False, repr: bool=False, 
 
 def debugged(var=_None, name=None, merge: bool=False, repr: bool=False, calls: int=1,
              color: int=None, background: bool=False, showFunc: bool=False, showFile: bool=False,
-             limitToLine: bool=True, minItems: int=2, maxItems: int=10, clickable: bool=False):
+             limitToLine: bool=True, minItems: int=4, maxItems: int=10, clickable: bool=False):
     """ An inline version of debug
     """
 
@@ -624,7 +624,7 @@ def isBetween(val, start, end, beginInclusive=False, endInclusive=False):
 
 
 
-def collidePoint(topLeft: 'Point', size: Union[tuple, list], target, inclusive=True):
+def collidePoint(topLeft: 'Point', size: Union[tuple, list, 'Size'], target, inclusive=True):
     return isBetween(target.x, topLeft.x, size[0], beginInclusive=inclusive, endInclusive=inclusive) and \
            isBetween(target.y, topLeft.y, size[1], beginInclusive=inclusive, endInclusive=inclusive)
 
