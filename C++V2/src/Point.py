@@ -1,12 +1,11 @@
 import math
 from copy import copy
 from random import randint
-import numpy as np
 
 from Cope import debug, depricated, untested, todo
-from PyQt6.QtCore import QPoint, QPointF, QSize, QSizeF
+from PyQt5.QtCore import QPoint, QPointF, QSize, QSizeF
 
-
+todo('Pair/Point could probably be optimized away from solely using floats')
 
 class Pair(QPointF):
     castType = float
@@ -14,7 +13,7 @@ class Pair(QPointF):
         return type(self)(x, y)
     def __init__(self, x=0, y=None):
         def setxy(x, y):
-            super(Pair, self).__init__(x, y)
+            super(Point, self).__init__(x, y)
             self.x, self.y = x, y
         try:
             if x == 0 and y is None:
@@ -229,17 +228,7 @@ class Pair(QPointF):
     def __json__(self, **options):
         return [self.x, self.y]
 
-
-
-class Point(np.array):
-    def __init__(self, x, y):
-        super().__init__([[x], [y]])
-
-    def serialize(self):
-        NotImplemented
-
-
-
+Point = Pair
 
 @untested
 def randomPointf(minX=0, maxX=100, minY=0, maxY=100):
@@ -261,7 +250,7 @@ def dist(p1, p2):
     return math.hypot(p2.x - p1.x, p2.y - p1.y)
 
 
-print(-Pair(8, -1))
+print(-Point(8, -1))
 
 
 # I put so much effort into these, I hate to just delete them

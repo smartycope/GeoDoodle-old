@@ -1,44 +1,40 @@
+from Point import Point
+from Line import Line
 from copy import deepcopy
 from math import ceil
-
-from Cope import debug, frange, reprise, timeFunc, todo
+from Cope import reprise, debug, timeFunc, frange, todo
+from PyQt5.QtCore import QRectF, QSize
+from PyQt5.QtGui import QPainterPath, QPainterPathStroker
 # The supirior version of namedtuple (literally just namedtuple, but mutable)
 from namedlist import namedlist
-from PyQt6.QtCore import QRectF, QSize
-from PyQt6.QtGui import QPainterPath, QPainterPathStroker
+import json_fix
 
-from Line import Line
-from Point import Pair as Point
+todo('file extensions arent automattic')
 
-from Singleton import Singleton as S
 
 # This is here for consistency's sake, not because this file needs it
-# _PatternParams = namedlist('PatternParams', 'xOverlap, yOverlap, includeHalfsies, '
-#                                            'skipRows, skipColumns, skipRowAmt, skipColumnAmt, '
-#                                            'flipRows, flipColumns, flipRowOrient, flipColumnOrient')
-# params = _PatternParams(
-#     xOverlap=0,
-#     yOverlap=0,
-#     includeHalfsies=False,
-#     skipRows=1,
-#     skipColumns=1,
-#     skipRowAmt=0,
-#     skipColumnAmt=0,
-#     flipRows=1,
-#     flipColumns=1,
-#     flipRowOrient=None,
-#     flipColumnOrient=None
-# )
+_PatternParams = namedlist('PatternParams', 'xOverlap, yOverlap, includeHalfsies, '
+                                           'skipRows, skipColumns, skipRowAmt, skipColumnAmt, '
+                                           'flipRows, flipColumns, flipRowOrient, flipColumnOrient')
+params = _PatternParams(
+    xOverlap=0,
+    yOverlap=0,
+    includeHalfsies=False,
+    skipRows=1,
+    skipColumns=1,
+    skipRowAmt=0,
+    skipColumnAmt=0,
+    flipRows=1,
+    flipColumns=1,
+    flipRowOrient=None,
+    flipColumnOrient=None
+)
 
 
 # Note the .simplified() function, which removes doubled lines
 
 @reprise
 class Pattern(QPainterPath):
-    """ A Pattern consisting of a set of lines, and a set of half lines (lines
-        which have one end in and one end out of the set boundary). It also keeps
-        track of it's bounds
-    """
     def __init__(self, lines, halfLines, dotSpread, rect, translation):
         # overlap = Point(params.xOverlap, params.yOverlap)
         # Don't just adjust the lines to the top left corner, adjust them so that they'll line up with where the current pattern already is
@@ -55,7 +51,7 @@ class Pattern(QPainterPath):
             # self = QPainterPathStroker(self.lines[0].pen).createStroke(self)
 
     def generate(self):
-        lines = self.lines + (self.halfLines if S.settings.value('pattern/include_halfsies') else [])
+        lines = self.lines + (self.halfLines if params.includeHalfsies else [])
         for line in lines:
             self.moveTo(line.start)
             self.lineTo(line.end)
@@ -73,7 +69,7 @@ class Pattern(QPainterPath):
         for i in flippedHalfLines:
             i.start.y -= (i.start.y - center) * 2
             i.end.y   -= (i.end.y   - center) * 2
-        return Pattern(flippedLines, flippedHalfLines, self._dotSpread, self.rect, self._translation)
+        return Pattern(params, flippedLines, flippedHalfLines, self._dotSpread, self.rect, self._translation)
 
     def flippedHorz(self):
         # center = min([i.start for i in self.lines] + [i.end for i in self.lines], key=lambda l: l.x).x + (self.rect.size.width() / 2)
@@ -88,7 +84,7 @@ class Pattern(QPainterPath):
         for i in flippedHalfLines:
             i.start.x -= (i.start.x - center) * 2
             i.end.x   -= (i.end.x   - center) * 2
-        return Pattern(flippedLines, flippedHalfLines, self._dotSpread, self.rect, self._translation)
+        return Pattern(params, flippedLines, flippedHalfLines, self._dotSpread, self.rect, self._translation)
 
     def translateLines(self, dx, dy):
         # debug(self.lines, 'before')
@@ -110,27 +106,34 @@ class Pattern(QPainterPath):
                 rtn.append(line + Point(dx, dy))
         return rtn
 
-    def allLines(self, halfLines=S.settings.value('pattern/include_halfsies')):
+    def allLines(self, halfLines=params.includeHalfsies):
         return self.lines + (self.halfLines if halfLines else [])
 
     def copy(self):
         return Pattern(self.lines, self.halfLines, self._dotSpread, self.rect, self._translation)
 
-    def serialize(self):
+    def __json__(self, **options):
         return [
             self.lines,
             self.halfLines,
             self.dotSpread,
-            [self.rect.x(), self.rect.y(), self.rect.width(), self.rect.height()]
+            [ self.rect.x(), self.rect.y(), self.rect.width(), self.rect.height() ]
         ]
 
     @staticmethod
-    def deserialize(j):
+    def fromJson(j):
         return Pattern([Line.fromJson(l) for l in j[0]], [Line.fromJson(l) for l in j[1]], j[2], QRectF(*j[3]), 0)
 
     def __str__(self):
         return f"Pattern[lines={self.lines}, halfLines={self.halfLines}]"
 
+
+# p = Pattern([Line(Point(0, 0), Point(20, 20)), Line(Point(10, 15))], [], 5, QRectF(0, 0, 20, 20), Point(0, 0))
+# debug(p)
+# p.translateLines(300, 300)
+# debug(p)
+# debug(p.translated(Point(-100, -100)))
+# debug(p)
 
 '''
     def flippedLines(self, vert, horz, includeHalfsies=True):
@@ -178,7 +181,7 @@ class Pattern(QPainterPath):
         return list(returnLines)
 '''
 
-# Don't remember what this is, but I remember it was important when I pasted it here
+
 """
 PAPER PANTOGRAPHS are usually printed with one or two full rows, and with partial rows for the next row line-up.
 

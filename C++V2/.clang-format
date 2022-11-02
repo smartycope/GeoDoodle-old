@@ -1,0 +1,235 @@
+# See https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+---
+AccessModifierOffset: -2
+# I can't decide between Align and BlockIndent
+# AlignAfterOpenBracket: BlockIndent
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: Right
+# AlignConsecutiveBitFields:
+#   Enabled: true
+#   AcrossEmptyLines: true
+#   AcrossComments: true
+#   AlignCompound: true
+#   PadOperators: false
+AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: true
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: Left
+AlignOperands:   Align
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: true
+#! AllowAllConstructorInitializersOnNextLine: true
+# This one is contentious as well
+AllowAllParametersOfDeclarationOnNextLine: true
+# I can't decide between Empty or Always
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: false
+#! AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: MultiLine
+AttributeMacros:
+  - __capability
+# These 2 could be true
+BinPackArguments: false
+BinPackParameters: false
+BitFieldColonSpacing: After
+BreakBeforeBraces: Attach
+# BreakBeforeBraces: Custom
+# This isn't used unless BreakBeforeBraces is Custom
+BraceWrapping:
+  AfterCaseLabel:  false
+  AfterClass:      false
+  # I don't understand this one
+  AfterControlStatement: Never
+  AfterEnum:       true
+  AfterFunction:   false
+  AfterNamespace:  false
+  AfterObjCDeclaration: false
+  AfterStruct:     false
+  AfterUnion:      false
+  AfterExternBlock: false
+  BeforeCatch:     false
+  BeforeElse:      false
+  BeforeLambdaBody: false
+  BeforeWhile:     false
+  IndentBraces:    false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+BreakAfterJavaFieldAnnotations: true
+BreakBeforeBinaryOperators: None
+# BreakBeforeConceptDeclarations: Allowed
+BreakBeforeConceptDeclarations: true
+# This one I'm torn on
+BreakBeforeTernaryOperators: false
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterComma
+BreakStringLiterals: true
+# BreakBeforeInheritanceComma: false
+# BreakConstructorInitializersBeforeComma: false
+ColumnLimit:     150
+CommentPragmas:  '^ IWYU pragma:'
+CompactNamespaces: true
+#! ConstructorInitializerAllOnOneLineOrOnePerLine: false
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+Cpp11BracedListStyle: false
+DeriveLineEnding: true
+DerivePointerAlignment: false
+DisableFormat:   false
+EmptyLineAfterAccessModifier: Always
+EmptyLineBeforeAccessModifier: LogicalBlock
+ExperimentalAutoDetectBinPacking: false
+FixNamespaceComments: true
+ForEachMacros:
+  - foreach
+  - Q_FOREACH
+  - BOOST_FOREACH
+IfMacros:
+  - KJ_IF_MAYBE
+IncludeBlocks:   Regroup
+IncludeCategories:
+  - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
+    Priority:        2
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '^(<|"(gtest|gmock|isl|json)/)'
+    Priority:        3
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '.*'
+    Priority:        1
+    SortPriority:    0
+    CaseSensitive:   false
+IncludeIsMainRegex: '(Test)?$'
+IncludeIsMainSourceRegex: ''
+# I don't understand this one
+IndentAccessModifiers: false
+IndentCaseLabels: true
+IndentCaseBlocks: false
+IndentExternBlock: NoIndent
+IndentGotoLabels: true
+IndentPPDirectives: BeforeHash
+# This requires clang-format 15
+#todo IndentRequiresClause:  false
+IndentWidth:     4
+IndentWrappedFunctionNames: false
+# This requires clang-format 15
+#todo InsertBraces: false
+InsertTrailingCommas: Wrapped
+# JavaImportGroups:
+JavaScriptQuotes: Leave
+JavaScriptWrapImports: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: Signature
+MacroBlockBegin: ''
+MacroBlockEnd:   ''
+MaxEmptyLinesToKeep: 3
+NamespaceIndentation: All
+# NamespaceMacros
+# Auto is also a good option here
+ObjCBinPackProtocolList: Always
+ObjCBlockIndentWidth: 4
+ObjCBreakBeforeNestedBlockParam: true
+ObjCSpaceAfterProperty: false
+ObjCSpaceBeforeProtocolList: false
+PPIndentWidth:   -1
+# This requires clang-format 14
+# PackConstuctorInitializers: NextLine
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyBreakTemplateDeclaration: 10
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 60
+PenaltyIndentedWhitespace: 0
+# THIS IS ABSOLUTELY SET IN STONE
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+# QualifierAlignment: Left
+# This requires clang-format 14
+#todo QualifierAlignment: Custom
+#todo QualifierOrder:
+#   - inline
+#   - const
+#   - constexpr
+#   - static
+#   - volatile
+#   - restrict
+#   - type
+# RawStringFormats:
+ReflowComments:  true
+# THIS IS SO NICE
+# This requires clang-format 15
+#todo RemoveBracesLLVM: true
+# I can't decide between SingleLine and WithFollowing
+# This requires clang-format 14
+#todo RequiresClausePosition: SingleLine
+# This requires clang-format 14
+#todo SeperateDefinitionBlocks: Always
+# I don't understand this one
+ShortNamespaceLines: 1
+# If this breaks, change it to CaseSensitive
+SortIncludes: CaseSensitive
+SortJavaStaticImport: Before
+SortUsingDeclarations: true
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: false
+SpaceBeforeInheritanceColon: false
+SpaceBeforeParens: Never
+# SpaceBeforeParensOptions:
+SpaceBeforeRangeBasedForLoopColon: false
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 2
+SpacesInAngles:  Never
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInLineCommentPrefix:
+  Minimum:         1
+  Maximum:         -1
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+Standard: Auto
+StatementAttributeLikeMacros:
+  - Q_EMIT
+StatementMacros:
+  - Q_UNUSED
+  - QT_REQUIRE_VERSION
+TypenameMacros:
+  - STACK_OF
+  - LIST_ENTRY
+TabWidth:        8
+UseCRLF:         false
+UseTab:          Never
+WhitespaceSensitiveMacros:
+  - STRINGIZE
+  - PP_STRINGIZE
+  - BOOST_PP_STRINGIZE
+  - NS_SWIFT_NAME
+  - CF_SWIFT_NAME
+
+---
+
+Language: Json
+BasedOnStyle: InheritParentConfig
+BreakBeforeBraces: Allman
+ColumnLimit: 0
+# ...

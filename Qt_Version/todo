@@ -1,0 +1,44 @@
+bind the mirror QActions
+
+specify a key repeat
+set up a settings file (Im pretty sure theres a Qt class for this)
+
+
+undo undos too many/too few lines after mirror is changed -- maybe use indecies instead of a buffer?
+
+add the ability to add text like in LTSpice
+bind ctrl+y to redo
+
+fix all the menus -- put in a text or ui file
+
+zooming
+flipping
+add different dot formations
+filling spaces
+repeating only across a specific axis
+add mouse middle click dragging do translation
+Allow the focus go offscreen properly
+add curves
+AUTO_IMPRINT_PATTERN doesnt quite work yet, and the pattern colors dont work either
+
+file extensions arent automattic
+consider making mirror use patterns instead of hand mirroring all the lines
+add a rotation option to Pattern.params
+add a seperate shortcut to just delete the selected area and not copy it
+the toolbar (file, edit, view thing bar) is grabbing focus I think
+mirroring has an off-by-one error somewhere that makes it so you cant touch those lines
+make shift when not being dragged toggle the current bound
+holding shift while moving with the arrow keys works, but doesnt let go until one move after you let go of shift
+change clipboard to use the actual clipboard via JSON
+if you hold down a number key, it triggers to change the color of that button
+add some sort of shortcuts to bring up the basic lines and/or basic chords
+just go through and play with it and fix or note any bugs that come up
+saving broke
+adding a preferences menu
+add an option to make clearAll reset the mirror or not
+figure out how to get the docks to work on the side
+a custom line editor (for custom pens)
+grabbing pattern isnt working right, possibly something to do with mirroring
+space and c stop working at random points, until you click the pattern, not sure why, something grabbing focus maybe?
+
+Pair/Point could probably be optimized away from solely using floats

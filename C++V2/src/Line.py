@@ -1,18 +1,19 @@
 import sys
-from typing import Union
+from typing import Unionp
 
 import numpy as np
 from Cope import debug, getMidPoint, invertColor, reprise, untested, confidence
-from PyQt6.QtCore import QLine, QLineF, QPoint, QPointF
-from PyQt6.QtGui import QColor, QFont, QPen
-from PyQt6.QtWidgets import QApplication, QLabel
+from PyQt5.QtCore import QLine, QLineF, QPoint, QPointF
+from PyQt5.QtGui import QColor, QFont, QPen
+from PyQt5.QtWidgets import QApplication, QLabel
 
-from Point import Pair as Point
+from Point import Point
 import json_fix
+
 
 @reprise
 class Line(QLineF):
-    def __init__(self, start, end=None, pen:QPen=QPen(), label=None):
+    def __init__(self, start, end=None, pen: QPen = QPen(), label=None):
         self.start = start
         self.end = end if end else start
         self.pen = pen
@@ -50,12 +51,14 @@ class Line(QLineF):
     @untested
     def createLabel(self, parent, dotSpread, dotSpreadMeasure, dotSpreadUnit, backgroundColor):
         if self.label is None:
-            self.label = QLabel(f'{round(self.getLen(dotSpread, dotSpreadMeasure), 1)} {dotSpreadUnit}', parent)
+            self.label = QLabel(
+                f'{round(self.getLen(dotSpread, dotSpreadMeasure), 1)} {dotSpreadUnit}', parent)
             self.label.font().setBold(False)
             self.label.font().setFamily('Times')
             # self.label.setStyleSheet(f"color:rgba{invertColor(backgroundColor)}")
             self.label.setStyleSheet(f"color:rgba{self.color}")
-            self.label.setGeometry(*self.getLenLoc().asTL().data(), self.label.width(), self.label.height())
+            self.label.setGeometry(
+                *self.getLenLoc().asTL().data(), self.label.width(), self.label.height())
         return self.label
 
     @untested
@@ -82,20 +85,24 @@ class Line(QLineF):
             return False
 
     def __sub__(self, point):
-        assert isinstance(point, (QPoint, QPointF)), f"Can't add types of Line and {type(point)}"
+        assert isinstance(point, (QPoint, QPointF)
+                          ), f"Can't add types of Line and {type(point)}"
         return Line(self.start - point, self.end - point, self.pen, self.label)
 
     def __add__(self, point):
-        assert isinstance(point, (QPoint, QPointF)), f"Can't add types of Line and {type(point)}"
+        assert isinstance(point, (QPoint, QPointF)
+                          ), f"Can't add types of Line and {type(point)}"
         return Line(self.start + point, self.end + point, self.pen, self.label)
 
     def __isub__(self, point):
-        assert isinstance(point, (QPoint, QPointF)), f"Can't add types of Line and {type(point)}"
+        assert isinstance(point, (QPoint, QPointF)
+                          ), f"Can't add types of Line and {type(point)}"
         self.start -= point
         self.end -= point
 
     def __iadd__(self, point):
-        assert isinstance(point, (QPoint, QPointF)), f"Can't add types of Line and {type(point)}"
+        assert isinstance(point, (QPoint, QPointF)
+                          ), f"Can't add types of Line and {type(point)}"
         self.start += point
         self.end += point
 

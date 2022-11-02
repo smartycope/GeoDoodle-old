@@ -1,11 +1,12 @@
-from PyQt6.QtWidgets import QColorDialog, QPushButton, QCommandLinkButton, QFileDialog, QLineEdit
-from PyQt6.QtGui import QColor, QPalette
-from PyQt6.QtCore import pyqtSlot, QEvent, Qt
+from PyQt5.QtWidgets import QColorDialog, QPushButton, QCommandLinkButton, QFileDialog, QLineEdit
+from PyQt5.QtGui import QColor, QPalette
+from PyQt5.QtCore import pyqtSlot, QEvent, Qt
 
 from os.path import dirname
 
 from Cope import debug
 from copy import deepcopy
+
 
 class ColorDialog(QPushButton):
     def __init__(self, *args, **kwargs):
