@@ -1,4 +1,5 @@
 import math
+# from Transformation import Transformation
 from copy import copy
 from random import randint
 import numpy as np
@@ -6,41 +7,54 @@ import numpy as np
 from Cope import debug, depricated, untested, todo
 from PyQt6.QtCore import QPoint, QPointF, QSize, QSizeF
 
-
-
-class Pair(QPointF):
+class Point(QPointF):
     castType = float
     def _initCopy(self, x, y):
         return type(self)(x, y)
     def __init__(self, x=0, y=None):
         def setxy(x, y):
-            super(Pair, self).__init__(x, y)
+            super(Point, self).__init__(x, y)
             self.x, self.y = x, y
         try:
-            if x == 0 and y is None:
-                setxy(0.0, 0.0)
-            elif y is None:
+            if y is None:
                 setxy(*self._interpretParams(x))
             else:
                 setxy(self.castType(x), self.castType(y))
         except ValueError:
             setxy(x, y)
     def _interpretParams(self, value):
+        # We were given 1 value
         try:
+            # It has an x and y, and they're NOT functions
             if (hasattr(value, 'x') and hasattr(value, 'y')) and not \
                (callable(getattr(value, 'x')) and callable(getattr(value, 'y'))):
                 return self.castType(value.x), self.castType(value.y)
+            # It has an x and y, and they ARE functions
             elif (hasattr(value, 'x') and hasattr(value, 'y')) and \
                  (callable(getattr(value, 'x')) and callable(getattr(value, 'y'))):
                 return self.castType(value.x()), self.castType(value.y())
-            elif hasattr(value, '__getitem__'):
+            # It's a numpy array
+            elif isinstance(value, np.ndarray):
+                # [[x],
+                #  [y]]
+                if np.shape(value) in ((2, 1), (3, 1)):
+                    return self.castType(value[0, 0]), self.castType(value[1, 0])
+                # [x, y]
+                elif np.shape(value) in ((1, 2), (1, 3)):
+                    return self.castType(value[0]), self.castType(value[1])
+                else:
+                    raise ValueError(f"Unable to interpret {value} as a Point")
+            # It has the x[] operator overloaded
+            elif hasattr(value, '__getitem__') and not isinstance(value, (np.floating, np.integer)):
                 return self.castType(value[0]), self.castType(value[1])
+            # It's of type QSize
             elif isinstance(value, (QSize, QSizeF)):
                 return self.castType(value.width()), self.castType(value.height())
+            # It's a scalar
             else:
                 return self.castType(value), self.castType(value)
         except:
-            raise ValueError(f"Unable to interpret {value} as a Point")
+            raise ValueError(f"Unable to interpret {value} of type {type(value)} as a Point")
 
     def __eq__(self, value):
         try:
@@ -97,6 +111,9 @@ class Pair(QPointF):
     def __pow__(self, value):
         x, y = self._interpretParams(value)
         return self._initCopy(self.x ** x, self.y ** y)
+    def __matmul__(self, mat):
+        debug(mat)
+        return self._initCopy(mat @ self.asArray(), None)
 
     def __radd__(self, value):
         x, y = self._interpretParams(value)
@@ -126,6 +143,9 @@ class Pair(QPointF):
     def __rpow__(self, value):
         x, y = self._interpretParams(value)
         return self._initCopy(x ** self.x, y ** self.y)
+    def __rmatmul__(self, mat):
+        debug(mat)
+        return self._initCopy(self.asArray() @ mat, None)
 
     def __iadd__(self, value):
         x, y = self._interpretParams(value)
@@ -146,7 +166,7 @@ class Pair(QPointF):
         x, y = self._interpretParams(value)
         self.x /= x
         self.y /= y
-        return self
+        return debug(self, clr=3)
     def __itruediv__(self, value):
         x, y = self._interpretParams(value)
         self.x /= x
@@ -169,6 +189,12 @@ class Pair(QPointF):
         x, y = self._interpretParams(value)
         self.x **= x
         self.y **= y
+        return self
+    def __imatmul__(self, mat):
+        debug(mat)
+        transformed = mat @ self.asArray()
+        self.x = transformed[0, 0]
+        self.y = transformed[1, 0]
         return self
 
     def __neg__(self):
@@ -196,22 +222,36 @@ class Pair(QPointF):
         self.y = round(self.y, n)
         return self
     def __ceil__(self, n=0):
-        return QPoint(math.ceil(self.x), math.ceil(self.y))
+        return self._initCopy(math.ceil(self.x), math.ceil(self.y))
     def __floor__(self, n=0):
-        return QPoint(math.floor(self.x), math.floor(self.y))
+        return self._initCopy(math.floor(self.x), math.floor(self.y))
     def __trunc__(self, n=0):
-        return QPoint(math.trunc(self.x), math.trunc(self.y))
+        return self._initCopy(math.trunc(self.x), math.trunc(self.y))
 
-    def flip(self):
-        x = self.x
-        self.x = self.y
-        self.y = x
-    def flipped(self):
-        return self._initCopy(self.y, self.x)
+    # These are already methods of QPointF
+    # def transpose(self):
+        # x = self.x
+        # self.x = self.y
+        # self.y = x
+    # def transposed(self):
+        # return self._initCopy(self.y, self.x)
     def data(self):
         return (self.x, self.y)
     def copy(self):
         return self._initCopy(self.x, self.y)
+    def asArray(self, vertical=True):
+        if vertical:
+            return np.array([[self.x], [self.y], [1]], dtype=self.castType)
+        else:
+            return np.array([self.x, self.y, 1], dtype=self.castType)
+
+    def transformed(self, mat:np.ndarray) -> 'Point':
+        new = mat @ self.asArray()
+        return self._initCopy(new[0, 0], new[1, 0])
+    def transform(self, mat:np.ndarray):
+        new = mat @ self.asArray()
+        self.x = new[0, 0]
+        self.y = new[1, 0]
 
     @property
     def width(self):
@@ -226,20 +266,11 @@ class Pair(QPointF):
     def height(self, to):
        self.y = to
 
-    def __json__(self, **options):
-        return [self.x, self.y]
-
-
-
-class Point(np.array):
-    def __init__(self, x, y):
-        super().__init__([[x], [y]])
-
     def serialize(self):
-        NotImplemented
-
-
-
+        return [self.x, self.y]
+    @staticmethod
+    def deserialize(obj):
+        return Point(obj)
 
 @untested
 def randomPointf(minX=0, maxX=100, minY=0, maxY=100):
@@ -259,9 +290,6 @@ def isAdj(p1, p2):
 @depricated
 def dist(p1, p2):
     return math.hypot(p2.x - p1.x, p2.y - p1.y)
-
-
-print(-Pair(8, -1))
 
 
 # I put so much effort into these, I hate to just delete them

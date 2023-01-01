@@ -1,11 +1,14 @@
-from Cope import todo, debug, untested, confidence, flattenList
+from Cope import todo, debug, untested, confidence, flattenList, depricated, frange
+import numpy as np
+from Transformation import transform2Transformation
 from PyQt6.QtCore import QEvent, QFile, QLine, QLineF, QRect, QRectF, Qt
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QTransform, QPolygon, QPolygonF
 from PyQt6.QtWidgets import QFileDialog, QMainWindow, QWidget
-import Pattern
+from Pattern import Pattern
 from Line import Line
-from Point import Pair
-import math
+from Point import Point
+# import math
+from math import ceil, floor, sin, cos, tan, radians, sqrt
 from copy import copy, deepcopy
 from Singleton import Singleton as S
 
@@ -20,43 +23,17 @@ def getBoundsRect(self) -> QRectF:
 
     return QRectF(left, highest, right - left, lowest - highest).normalized()
 
-def updatePattern(self):
-    self.repaint()
-    if len(self.bounds) < 2:
-        self.pattern = None
-        return
-
-    rect = self.getBoundsRect()
-    if not (rect.width() and rect.height()):
-        self.pattern = None
-        return
-
-    # If you're optimizing this later, don't forget to regenerate the pattern here
-    self.pattern = Pattern.Pattern(*self.getLinesWithinRect(rect, True), S.settings.dotSpread, rect, self.translation)
-
-    # Generate the flipped patterns, if applicable
-    if S.settings.value('pattern/flip_row_orient') == 'Vertically' or S.settings.value('pattern/flip_column_orient') == 'Vertically':
-        self.vertPattern = self.pattern.flippedVert()
-    if S.settings.value('pattern/flip_row_orient') == 'Horizontally' or S.settings.value('pattern/flip_column_orient') == 'Horizontally':
-        self.horzPattern = self.pattern.flippedHorz()
-    if (S.settings.value('pattern/flip_row_orient') == 'Vertically' or S.settings.value('pattern/flip_column_orient') == 'Vertically') and \
-        (Pattern.params.flipRowOrient == 'Horizontally' or Pattern.params.flipColumnOrient == 'Horizontally'):
-        self.fullFlippedPattern = self.horzPattern.flippedVert()
-
-    if S.settings.value('paper/auto_imprint_pattern'):
-        self.getLinesFromPattern()
-
 def getLinesWithinRect(self, bounds:QRectF, includeCurrentline=False) -> ['lines', 'halfLines']:
     lines = []
     halfLines = []
+    # "inflate" the rectangle just a little so it covers off-by-one errors
+    bounds = bounds.adjusted(-1, -1, 1, 1)
 
     # Include the current line
-    # for line in self.lines:
     for line in self.lines + ([self.currentLine] if self.currentLine is not None and includeCurrentline else []):
-        # "inflate" the rectangle just a little so it covers off-by-one errors
-        # .adjusted(-1, -1, 1, 1)
         # And translate back, because the bounds are translated so they can be drawn easier, but the lines aren't translated directly
-        within = line.within(bounds.translated(self.translation * -1))
+        # within = line.within(bounds.transformed(self.transformation * -1))
+        within = line.within(bounds)
         if within:
             lines.append(line)
         elif within is not None:
@@ -71,162 +48,260 @@ def toggleRepeat(self):
         self.updateMirror(setIndex=0)
     else:
         self.updateMirror(setIndex=self.rememberedMirrorState)
-    self.updatePattern()
 
-# Because scopes are inconsistent
-# _lines = []
 def _addLines(self, pattern):
     self.patternLines += pattern.copy().allLines()
 
+@depricated
 def getLinesFromPattern(self):
-    # global _lines
     if self.pattern is None:
         return []
 
     self.patternLines = []
 
-    # _lines = []
-    # def addLines(pattern):
-    #     global _lines
-    #     _lines += debug(pattern.allLines())
-
-    self._repeatPatternLoop(self._addLines, self.pattern.translateLines)
+    self._repeatPatternLoop(self._addLines, self.pattern.transformed)
     # I don't know why shifting it like this is nesicarry
-    return [l + (Pair(self.size())/2 + (-self.pattern.rect.width()*2, 0)) for l in self.patternLines]
+    return [l + (Point(self.size())/2 + (-self.pattern.rect.width()*2, 0)) for l in self.patternLines]
     # return _lines
 
 def imprintLines(self):
     hold = S.settings.value('paper/auto_imprint_pattern')
     S.settings.setValue('paper/auto_imprint_pattern', True)
-    self.updatePattern()
     S.settings.setValue('paper/auto_imprint_pattern', hold)
 
     self.lines += self.patternLines
 
 def destroySelection(self, andBounds=True):
+    # for line in self.pattern.allLines():
     lines, halfLines = self.getLinesWithinRect(self.getBoundsRect())
-    for line in lines + halfLines if Pattern.params.includeHalfsies else lines:
+    for line in (lines + halfLines) if S.settings['pattern/include_halfsies'] else lines:
         self.lines.remove(line)
     if andBounds:
         self.bounds.clear()
-    self.updatePattern()
+    self.repaint()
 
-def addBound(self, remove=True):
-    # If there's already a bound there, just remove it instead
-    # If selecting is None, then do add it, becuase it'll move around
-    # if self.focusLoc in self.bounds and self.selecting is not None:
-    if remove:
-        while self.focusLoc in self.bounds:
-            debug('removing bound')
-            # self.bounds.remove(self.focusLoc + self.translation)
-            self.bounds.remove(self.focusLoc)
-    else:
-        # self.bounds.append(self.focusLoc.copy() + self.translation)
-        self.bounds.append(self.focusLoc.copy())
-
-    # if self.repeating:
-    self.updatePattern()
-
-def _repeatPatternLoop(self, drawFunc:'func(Pattern)', translateFunc:'func(dx, dy)'):
+def _getPatternTransformations(self, pattern=None):
     """ This is the main engine of the pattern repeating
-        drawFunc is given a Pattern parameter, and is called whenever a pattern needs to be placed
-        translateFunc takes dx and dy parameters, and is called whenever we need to translate the pattern
-        This is useful so that we don't have to rewrite this whole function for getting lines from a pattern.
+        This returns a list of transformations to apply to pattern to repeat it
+        everywhere
     """
-    if self.repeating and self.pattern:
-        # The size of the area we want to cover
-        area = Pair(self.size())
-        if S.debugging:
-            area /= 4
-        # The dimentions of the pattern
-        size = Pair(self.pattern.rect.size())
-        patternStart = Pair(self.pattern.rect.topLeft())
-        # Every <skip> rows/columns, we add <amt> spaces
-        skip = Pair(Pattern.params.skipRows, Pattern.params.skipColumns)
-        amt  = Pair(Pattern.params.skipRowAmt, Pattern.params.skipColumnAmt)
-        flip = Pair(Pattern.params.flipRows, Pattern.params.flipColumns)
-        # How much space we add between each pattern
-        overlap = Pair(Pattern.params.xOverlap, Pattern.params.yOverlap)
-        # Keeps track of the current translations
-        current = Pair(0, 0)
+    if pattern is None:
+        pattern = self.pattern
 
-        # Draw outside a little so it looks good
-        area += size*2
-        # Don't know why this is here
-        area.y += S.settings.dotSpread
+    if not self.repeating or pattern is None:
+        return []
 
-        # How much we need to translate to draw the next pattern
-        shift = size + (overlap * S.settings.dotSpread)
+    patternRelativeTransformation = self.transformation.copy()
+    # Restrict the dot transformation to within the screen area, but only shift in increments of pattern.size
+    # Then also shift to the middle, to make it the origin
+    patternRelativeTransformation[0, 2] = ((patternRelativeTransformation[0, 2] % (patternRelativeTransformation[0, 0] * pattern.size.width())) ) + (self.size().width()  / 2)
+    patternRelativeTransformation[1, 2] = ((patternRelativeTransformation[1, 2] % (patternRelativeTransformation[1, 1] * pattern.size.height()))) + (self.size().height() / 2)
 
-        # This fixes the bug where if overlap is too small it doesn't draw enough patterns
-        # fit.x -= overlap.x if overlap.x < 0 else 0
-        # fit.y -= overlap.y if overlap.y < 0 else 0
+    amt = Point(S.settings['pattern/skip_row_amt'], S.settings['pattern/skip_column_amt'])
+    # The dimentions of the pattern
+    size = Point(pattern.size)
 
-        # We don't want to actually start from the translation, we just want to offset it enough so that it looks like we did
-        translationOffset = self.translation % shift
-        # Because the we want to align the overarching pattern with the selected pattern
-        currentPatternPosOffset = patternStart % shift
-        # So that when we change overlap, it still lines up with the selected pattern
-        # I don't know why -size*2 is here.
-        # overlapOffset = ((patternStart // shift) * S.settings.dotSpread) - shift*2
-        # debug(overlapOffset)
-        overlapOffset = ((patternStart // size) * overlap * S.settings.dotSpread) - size*2
-        debug(overlapOffset)
-        # Where we start drawing the overarching pattern from
-        start = -size + translationOffset + currentPatternPosOffset# - overlapOffset
+    # The size of the area we want to cover, in "pure" cooridinates
+    # I thought we could just transform it, but that didn't work.
+    translation = Point(self.transformation[0, 0], self.transformation[1, 1])
+    area = Point(self.size()) / translation
+    # Not quite sure why this is here, but it almost makes sense
+    area /= 2
+    # Because the pattern draws from the top left. We want to talk about it from the center
+    area -= size / 2
+    if S.debugging and False:
+        area /= 2
 
-        # Don't know why this needs set to True to start, but it makes it work, so don't question it.
-        downShift = True
-        start.y -= size.y * 2
+    # The amount we need to offset the start by to have the pattern line up with the
+    # already selected pattern
+    offset = Point(self.getBoundsRect()) / translation
+    #* offset %= size
+    # How much space we add between each pattern
+    overlap = Point(S.settings['pattern/xOverlap'], S.settings['pattern/yOverlap'])
+    # How much we need to translate to draw the next pattern
+    shift = size + overlap
 
-        # How many patterns will fit in the area
-        fit = (area - start) / shift
+    # debug(pattern, 'pattern')
+    # debug(area, 'area', clr=2)
+    # debug(size, 'size')
+    # debug(overlap, 'overlap')
+    # debug(shift, 'shift')
+    # debug(fit, 'fit')
+    # debug(offset, 'offset')
+    # debug(S.settings['pattern/flip_row_orient'], 'row orient')
+    # debug(S.settings['pattern/flip_column_orient'], 'col orient')
 
-        if DEBUG:
-            start += Pair(self.size()) / 2
-            # Draw a debugging box to show the simulated area
-            debugBox = QPainterPath()
-            debugBox.addRect(*start.data(), *area.data())
-            drawFunc(debugBox)
-            # drawFunc = lambda p: drawFunc(p.scale)
+    transformations = []
+    # We start at -area, because area is a positive number, and the center should
+    # be the origin, not the top-left
+    # The +/- are to make sure it draws just outside of the area
+    for r, x in enumerate(frange(-area.x, area.x, shift.x)):
+        for c, y in enumerate(frange(-area.y, area.y, shift.y)):
+            t = np.array([
+                [1, 0, x],
+                [0, 1, y],
+                [0, 0, 1],
+            ])
 
-        def translate(x, y, current):
-            translateFunc(x, y)
-            return current + (x, y)
-
-        # This just moves where we're drawing the pattern
-        current = translate(start.x, start.y, current)
-        # translate() compounds on itself, that's why this is weird.
-        for y in range(math.ceil(fit.y)):
-            for x in range(math.ceil(fit.x)):
-                todo('flipping goes somewhere in here?')
-                if not downShift:
-                    if not x % skip.x:
-                        shiftAmt = amt.x * S.settings.dotSpread + size.x
-                    else:
-                        shiftAmt = size.x
-                    current = translate(shiftAmt + (overlap.x * S.settings.dotSpread), 0, current)
-                    # current = translate(shiftAmt, 0, current)
+            '''
+            if not r % S.settings['pattern/rotate_rows']:
+                amt = radians(S.settings['pattern/rotate_row_amt'])
+                sin_, cos_ = sin(amt), cos(amt)
+                # debug(sin_, 'sin', clr=2)
+                # debug(cos_, 'cos')
+                translation = Point(t[0, 2], t[1, 2])
+                shift = translation #+ (size / 2)
+                # debug(shift, 'shift', clr=2)
+                # t = t @ np.array([
+                #     [1, 0, -shift.x - (size.x/2)],
+                #     [0, 1, -shift.y - (size.y/2)],
+                #     [0, 0, 1],
+                # ])
+                # hyp = sqrt(size.width**2 + size.height**2) / 2
+                # hyp = size / 2
+                # R = hyp
+                # R = Point(hyp.x-t[0, 2], hyp.y-t[1, 2])
+                t = t @ np.array([
+                    [ cos_, sin_, 0],
+                    # [ cos_, sin_, shift.x*(1-cos_) + shift.y*sin_],
+                    [-sin_, cos_, 0],
+                    # [-sin_, cos_, shift.y*(1-cos_) - shift.x*sin_],
+                    [0, 0, 1],
+                ])
+                # t = t @ np.array([
+                #     [1, 0, shift.x + shift.x],
+                #     [0, 1, shift.y + shift.y],
+                #     [0, 0, 1],
+                # ])
+            if not c % S.settings['pattern/rotate_columns']:
+                amt = radians(S.settings['pattern/rotate_column_amt'])
+                sin_, cos_ = sin(amt), cos(amt)
+                t = t @ np.array([
+                    [cos_, sin_, 0],
+                    [-sin_, cos_, 0],
+                    [0, 0, 1],
+                ])
+            '''
+            if not r % S.settings['pattern/flip_rows']:
+                if S.settings['pattern/flip_row_orient'] == S.VERT:
+                    t = t @ np.array([
+                        [1, 0, 0],
+                        [0, -1, -size.x + 1],
+                        [0, 0, 1],
+                    ])
+                elif S.settings['pattern/flip_row_orient'] == S.HORZ:
+                    t = t @ np.array([
+                        [-1, 0, -size.y - 1],
+                        [0, 1, 0],
+                        [0, 0, 1],
+                    ])
+            if not c % S.settings['pattern/flip_columns']:
+                if S.settings['pattern/flip_column_orient'] == S.VERT:
+                    t = t @ np.array([
+                        [1, 0, 0],
+                        [0, -1, -size.x + 1],
+                        [0, 0, 1],
+                    ])
+                elif S.settings['pattern/flip_column_orient'] == S.HORZ:
+                    t = t @ np.array([
+                        [-1, 0, -size.y - 1],
+                        [0, 1, 0],
+                        [0, 0, 1],
+                    ])
+            if not r % S.settings['pattern/skip_rows']:
+                t = t @ np.array([
+                    [1, 0, S.settings['pattern/skip_row_amt']],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                ])
+            if not c % S.settings['pattern/skip_columns']:
+                t = t @ np.array([
+                    [1, 0, 0],
+                    [0, 1, S.settings['pattern/skip_column_amt']],
+                    [0, 0, 1],
+                ])
+            if not r % S.settings['pattern/shear_rows']:
+                amt = radians(S.settings['pattern/shear_row_amt'])
+                # x = 0, y = 1
+                if not S.settings['pattern/shear_row_dir']:
+                    t = t @ np.array([
+                        [1, tan(amt), 0],
+                        [0, 1, 0],
+                        [0, 0, 1],
+                    ])
                 else:
-                    if not y % skip.y:
-                        shiftAmt = amt.y * S.settings.dotSpread + size.y
-                    else:
-                        shiftAmt = size.y
-                    # current = translate(-xAtEndOfRow, shiftAmt, current)
-                    current = translate(start.x - current.x - size.x, shiftAmt + (overlap.y * S.settings.dotSpread), current)
-                    # current = translate(start.x - current.x - size.x, shiftAmt, current)
+                    t = t @ np.array([
+                        [1, 0, 0],
+                        [tan(amt), 1, 0],
+                        [0, 0, 1],
+                    ])
+            if not c % S.settings['pattern/shear_columns']:
+                amt = radians(S.settings['pattern/shear_column_amt'])
+                # x = 0, y = 1
+                if not S.settings['pattern/shear_column_dir']:
+                    t = t @ np.array([
+                        [1, tan(amt), 0],
+                        [0, 1, 0],
+                        [0, 0, 1],
+                    ])
+                else:
+                    t = t @ np.array([
+                        [1, 0, 0],
+                        [tan(amt), 1, 0],
+                        [0, 0, 1],
+                    ])
 
-                drawFunc(self.pattern)
+            transformations.append(patternRelativeTransformation @ t)
+    return transformations
 
-                downShift = False
-                # If we're outside of the pattern, don't draw anymore
-                #   Really, these are just for optimization. There's a couple bugs here,
-                #   but they don't really matter that much, QPainterPath is pretty fast.
-                # if current.x > area.x - size.x:
-                if current.x > area.x + start.x - size.x:
-                    break
 
-            downShift = True
-            # if current.y > area.y - size.y:
-            if current.y > area.y + start.y - size.y:
+
+
+
+
+
+
+
+
+
+
+
+
+    """
+    for y in range(math.ceil(fit.y)):
+        for x in range(math.ceil(fit.x)):
+            todo('flipping goes somewhere in here?')
+            if not downShift:
+                if not x % skip.x:
+                    shiftAmt = amt.x * scale + size.x
+                else:
+                    shiftAmt = size.x
+                # current = translate(shiftAmt + (overlap.x * scale), 0, current)
+                current = translate(shiftAmt.x + (overlap.x * scale.x), 0, current)
+                # current = translate(shiftAmt, 0, current)
+            else:
+                if not y % skip.y:
+                    shiftAmt = amt.y * scale + size.y
+                else:
+                    shiftAmt = size.y
+                # current = translate(-xAtEndOfRow, shiftAmt, current)
+                # current = translate(start.x - current.x - size.x, shiftAmt + (overlap.y * scale), current)
+                current = translate(start.x - current.x - size.x, shiftAmt.y + (overlap.y * scale.y), current)
+                # current = translate(start.x - current.x - size.x, shiftAmt, current)
+
+            drawFunc(self.pattern)
+
+            downShift = False
+
+            # If we're outside of the pattern, don't draw anymore
+            #   Really, these are just for optimization. There's a couple bugs here,
+            #   but they don't really matter that much, QPainterPath is pretty fast.
+            # if current.x > area.x - size.x:
+            if current.x > area.x + start.x - size.x:
                 break
+
+        downShift = True
+        # if current.y > area.y - size.y:
+        if current.y > area.y + start.y - size.y:
+            break
+    """

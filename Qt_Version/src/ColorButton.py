@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QColorDialog, QPushButton, QCommandLinkButton, QFile
 from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtCore import pyqtSlot, QEvent, Qt
 from DoublePushButton import QDoublePushButton
-
+from Singleton import Singleton as S
 from Cope import debug, invertColor
 from copy import deepcopy
 
@@ -21,7 +21,7 @@ class ColorButton(QDoublePushButton):
         # If we choose a new color, we want to automatically select that color
         self.doubleClicked.connect(self.clicked.emit)
 
-    def getNewColor(self):
+    def getNewColor(self, *args, **kwargs):
         self.color = QColorDialog.getColor()
 
     def updateColor(self):
@@ -37,6 +37,10 @@ class ColorButton(QDoublePushButton):
         # the [:-1] is there to drop the alpha (we don't want to invert the alpha)
         pal.setColor(QPalette.ColorRole.ButtonText, QColor(*(invertColor(self._color.getRgb()))[:-1]))
         self.setPalette(pal)
+        # This is kinda hacky, but it works. I think.
+        if len(self.text()) == 1:
+            # debug(self.text(), 'changing color button')
+            S.settings[f'window/color_button_{self.text()}'] = self._color
 
         # This shouldn't be necissary now, I removed focus in the ui file
         # self.clearFocus()

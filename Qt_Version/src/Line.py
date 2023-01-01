@@ -2,20 +2,23 @@ import sys
 from typing import Union
 
 import numpy as np
-from Cope import debug, getMidPoint, invertColor, reprise, untested, confidence
+from Cope import debug, getMidPoint, invertColor, reprise, untested, confidence, todo
 from PyQt6.QtCore import QLine, QLineF, QPoint, QPointF
-from PyQt6.QtGui import QColor, QFont, QPen
+from PyQt6.QtGui import QColor, QFont, QPen, QTransform
 from PyQt6.QtWidgets import QApplication, QLabel
 
-from Point import Pair as Point
-import json_fix
+from Point import Point
 
 @reprise
 class Line(QLineF):
-    def __init__(self, start, end=None, pen:QPen=QPen(), label=None):
+    STRAIGHT = 0
+    CURVEA  = 1
+    CURVEB  = 2
+    def __init__(self, start:Point, end=None, pen:QPen=QPen(), curve=STRAIGHT, label=None):
         self.start = start
-        self.end = end if end else start
+        self.end = end if end is not None else start
         self.pen = pen
+        self.curve = curve
         self.label = label
         super().__init__(self.start, self.end)
 
@@ -28,7 +31,7 @@ class Line(QLineF):
         return self.copy()
 
     def copy(self):
-        return Line(self.start, self.end, self.pen, self.label)
+        return Line(self.start, self.end, self.pen, self.curve, self.label)
 
     def isFinished(self):
         return self.end != None
@@ -46,6 +49,29 @@ class Line(QLineF):
             return False
         else:
             return None
+
+    def transform(self, mat:np.ndarray):
+        self.start.transform(mat)
+        # self.start = self.start.transformed(mat)
+        self.end.transform(mat)
+        # self.end = self.end.transformed(mat)
+        # self.start @= mat
+        # self.end @= mat
+        # self.start = self.start.transformed(mat)
+        # self.end = self.end.transformed(mat)
+        todo('transform the label here too')
+
+    def transformed(self, mat:np.ndarray):
+        #* This *should* work
+        # c = self.copy()
+        # c.transform(mat)
+        # return c
+        #* THIS *SHOULD* WORK
+        # return Line(mat @ self.start, mat @ self.end)
+        #* ugh.
+
+        # debug(self.pen.color().getRgb())
+        return Line(Point(mat @ self.start.asArray()), Point(mat @ self.end.asArray()), self.pen, self.label)
 
     @untested
     def createLabel(self, parent, dotSpread, dotSpreadMeasure, dotSpreadUnit, backgroundColor):
@@ -72,7 +98,8 @@ class Line(QLineF):
         return getMidPoint(self.start, self.end)
 
     def __str__(self):
-        return f'Line[{self.start}, {self.end}, penColor={self.pen.color().getRgb()}]'
+        return f'Line[{self.start}, {self.end}]'
+        # return f'Line[{self.start}, {self.end}, penColor={self.pen.color().getRgb()}]'
 
     def __eq__(self, a):
         """ Note that this does *not* compare color """
@@ -82,31 +109,38 @@ class Line(QLineF):
             return False
 
     def __sub__(self, point):
-        assert isinstance(point, (QPoint, QPointF)), f"Can't add types of Line and {type(point)}"
+        assert isinstance(point, (QPoint, QPointF, Point)), f"Can't add types of Line and {type(point)}"
         return Line(self.start - point, self.end - point, self.pen, self.label)
 
+    def __div__(self, point):
+        assert isinstance(point, (QPoint, QPointF, Point)), f"Can't add types of Line and {type(point)}"
+        return Line(self.start / point, self.end / point, self.pen, self.label)
+
+    # def __rdiv__(self, point):
+    #     assert isinstance(point, (QPoint, QPointF, Point)), f"Can't add types of Line and {type(point)}"
+    #     return Line(point / self.start, point / self.end, self.pen, self.label)
+
     def __add__(self, point):
-        assert isinstance(point, (QPoint, QPointF)), f"Can't add types of Line and {type(point)}"
+        assert isinstance(point, (QPoint, QPointF, Point)), f"Can't add types of Line and {type(point)}"
         return Line(self.start + point, self.end + point, self.pen, self.label)
 
     def __isub__(self, point):
-        assert isinstance(point, (QPoint, QPointF)), f"Can't add types of Line and {type(point)}"
+        assert isinstance(point, (QPoint, QPointF, Point)), f"Can't add types of Line and {type(point)}"
         self.start -= point
         self.end -= point
 
     def __iadd__(self, point):
-        assert isinstance(point, (QPoint, QPointF)), f"Can't add types of Line and {type(point)}"
+        assert isinstance(point, (QPoint, QPointF, Point)), f"Can't add types of Line and {type(point)}"
         self.start += point
         self.end += point
 
-    def __json__(self, **options):
+    def serialize(self):
         return [
-            self.start,
-            self.end,
+            self.start.serialize(),
+            self.end.serialize(),
             self.pen.color().getRgb(),
             self.label
         ]
-
     @staticmethod
-    def fromJson(j):
-        return Line(Point(j[0]), Point(j[1]), QPen(QColor(*j[2])), j[3], j[4])
+    def deserialize(j):
+        return Line(Point(j[0]), Point(j[1]), QPen(QColor(*j[2])), j[3])

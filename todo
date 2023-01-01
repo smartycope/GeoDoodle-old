@@ -1,13 +1,14 @@
+test
 * Bugs to Fix:
    menu x button makes it so you can't reopen that menu
    you have to press within the menu at least once to get it to recognize any button clicks -- hack fixed
-   
+
    the preview pattern in the repeat menu doesn't get the x/yAmount based on the offset
    if you save a pattern and open it later in a bigger window, it's not going to be big enough
    esc within the color picker exits out of the entire program
    the current line doesn't scale with home/end
    the left/right slider buttons still aren't working properly
-   something's wrong with repeat... 
+   something's wrong with repeat...
    make repeat (or at least the preview) center the pattern in the middle of the surface
    cut out line doubling up on repeating patterns
    turn mirroring off as you create a pattern
@@ -26,7 +27,7 @@
    allow dotSpread to be different in the x and y axies
    repeat is out of sync with the dots
    repeat end pattern is out of sync with the dots as well
-   
+
 
 
 Features to extend:
@@ -82,7 +83,7 @@ Features to add
    add the ability to color in areas inbetween the lines
    add copy and paste functionality (select with the bounds box maybe?)
    add an option that lets you put a picture as the background?
-   
+
 
 
  * maybe have the repeater (somehow) recognize if it's a tesselation, and then have an x and a y setting pop up to specify the overlap.
@@ -97,7 +98,7 @@ Features to add
     - the ability to color in areas between lines
       - use a recursive function that reads pixels from the surface!
     - be able to change line colors
- * be able to end (and maybe start?) a line along a different line 
+ * be able to end (and maybe start?) a line along a different line
     - use a modifier key to be able to do such
  * add automatic dynamic tesselation repeating
     - add an option to turn it on or off
@@ -105,7 +106,7 @@ Features to add
 
 #* THINGS TO ADD
     # add repeating
-    
+
 
     add fancy repeating (with a menu)
     maybe add a failsafe in case it's fullscreen and everythings stopped

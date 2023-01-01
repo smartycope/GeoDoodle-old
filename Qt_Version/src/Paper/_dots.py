@@ -1,94 +1,133 @@
 import numpy as np
-from Cope import todo, debug, untested, confidence, flattenList
+# from Transformation import Transformation
+from Cope import todo, debug, untested, confidence, flattenList, frange
 from PyQt6.QtCore import QEvent, QFile, QLine, QLineF, QRect, QRectF, Qt
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QTransform, QPolygon, QPolygonF
 from PyQt6.QtWidgets import QFileDialog, QMainWindow, QWidget
-import Pattern
+from Transformation import transform2Transformation
 from Line import Line
-from Point import Pair
+from Point import Point
 from Singleton import Singleton as S
+from math import floor, ceil
 
-#* Dots
-def regenerateDots(self, size:'QSize'):
-    #* The top-left corner-centric way of generating dots
-    # self.dots = np.arange(start, stop)
-    # self.dots = []
-    # We don't actually need to start drawing from there, we only need to offset it a little so it *looks*
-    #   like we started drawing from there
-    # for x in range(round(self.translation.x % S.settings.dotSpread), round(size.width()), S.settings.dotSpread):
-    #     for y in range(round(self.translation.y % S.settings.dotSpread), round(size.height()), S.settings.dotSpread):
-    #         self.dots.append(Point(x, y))
-    #Reshapes 1d array in to 2d, containing 10 rows and 5 columns.
-    # self.dots = np.arange(self.translation.x % S.settings.dotSpread, size.width(), S.settings.dotSpread).reshape(10,5)
-    # self.dots = np.arange(0, size.width()-S.settings.dotSpread, S.settings.dotSpread).reshape(10,5)
-    # np.atleast_2d()
+"""
+def regenerateDots(self, start=Point(0, 0), size:'QSize'=None):
+    if size is None:
+        size = self.size()
+    xarr = []
+    yarr = []
+    amt = round(((Point(size)) / 2) / self.scale)
+    for x in range(-amt.x + int(start.x), amt.x - int(start.x)):
+        for y in range(-amt.y + int(start.y), amt.y - int(start.y)):
+            xarr.append(x)
+            yarr.append(y)
+    self.pureDots = np.array([xarr, yarr, [1] * len(xarr)])
+    self.dots = self.relativeTransformation @ self.pureDots
+    debug(f'Made {len(self.pureDots[0])} new dots')
+"""
 
-    # This creates an array of the x coordinates, then an array filled with the current y coordinate, then
-    #   merges them together
-    # These 2 lines are the same as...
-    x = np.arange(self.translation.x % debug(S.settings.dotSpread), size.width(), S.settings.dotSpread, int)
-    self.dots = np.column_stack([x, np.repeat(0, len(x))])
+def regenerateDots(self, start=Point(0, 0), size:'QSize'=None):
+    if size is None:
+        size = self.size()
+    xarr = []
+    yarr = []
+    amt = ((Point(size)) / 2) / self.scale
+    for x in frange(-amt.x + start.x, amt.x - start.x):
+        for y in frange(-amt.y + start.y, amt.y - start.y):
+            xarr.append(x)
+            yarr.append(y)
+    self.pureDots = np.array([xarr, yarr, [1] * len(xarr)])
+    self.dots = self.relativeTransformation @ self.pureDots
+    debug(f'Made {len(self.pureDots[0])} new dots')
 
-    for y in range(round(self.translation.y % S.settings.dotSpread), round(size.height()), S.settings.dotSpread):
-        # ...these 2 lines (dang python doesn't have any do-while loops)
-        x = np.arange(self.translation.x % S.settings.dotSpread, size.width(), S.settings.dotSpread, int)
-        self.dots = np.concatenate((self.dots, np.column_stack([x, np.repeat(y, len(x))])))
+def transform(self, transformation:np.ndarray, regenerate=False, resizing=False):
+    """ Applies the given transformation to the self.transformation matrix and
+        to all the relevant points """
 
-    # self.untranslatedDots = self.dots
+    # Before we actually allow the transformation, first check that it's acceptable
+    newTransformation = transformation @ self.transformation
+    # Ensure that we can only zoom in and out so far
+    if newTransformation[0, 0] < S.settings['min_scale'] or \
+       newTransformation[1, 1] < S.settings['min_scale'] or \
+       newTransformation[0, 0] > S.settings['max_scale'] or \
+       newTransformation[1, 1] > S.settings['max_scale']:
+        return
+    # We only need to make new dots if we're changing the scale factor
+    regenerate = (newTransformation[0, 0] != self.transformation[0, 0]) or (newTransformation[1, 1] != self.transformation[1, 1]) or regenerate
+    self.transformation = newTransformation
 
-def translate(self, amt:'Point'):
-    if S.settings.value('paper/smooth_translation'):
-        self.translation += amt
+    size = Point(self.size())
+
+    self.relativeTransformation = self.transformation.copy()
+    # Restrict the dot transformation to within the screen area
+    # debug((self.relativeTransformation[0, 2] % self.relativeTransformation[0, 0]), 'x')
+    # This is wrong, this just aligns to the relative center of the screen, not the center dot.
+    # BUT IT WORKS SO DONT TOUCH IT
+    translationOffset = Point(self.relativeTransformation[0, 2] % self.relativeTransformation[0, 0],
+                              self.relativeTransformation[1, 2] % self.relativeTransformation[1, 1])
+    self.centerDot = ((size - (size % self.scale)) /2) + translationOffset
+    self.relativeTransformation[0, 2] = translationOffset.x + (self.size().width()  / 2)# + ((self.size().width() / 2) % self.relativeTransformation[0, 0]))
+    # self.relativeTransformation[0, 2] = self.centerDot.x# + (self.size().width()  / 2)# + ((self.size().width() / 2) % self.relativeTransformation[0, 0]))
+    # self.relativeTransformation[0, 2] = (self.size().width() % self.relativeTransformation[0, 2]) + (self.size().width()  / 2)
+    self.relativeTransformation[1, 2] = translationOffset.y + (self.size().height() / 2)# + ((self.size().height() / 2) % self.relativeTransformation[1, 1]))
+    # self.relativeTransformation[1, 2] = self.centerDot.y# + (self.size().height() / 2)# + ((self.size().height() / 2) % self.relativeTransformation[1, 1]))
+    # self.relativeTransformation[1, 2] = (self.size().height() % self.relativeTransformation[1, 2]) + (self.size().height() / 2)
+
+    # debug(size % self.scale, 'offset')
+    # self.centerDot = (size - (size % self.scale)) / 2
+
+    # If we've changed the scale factor, then regenerate the dots so we always
+    # have the right amount on screen
+    if regenerate:
+        self.regenerateDots()
     else:
-        self.translationBuffer += amt
-        # These 2 lines are equivalent
-        amt = S.settings.dotSpread * (self.translationBuffer // S.settings.dotSpread)
-        # amt = self.translationBuffer - (self.translationBuffer % S.settings.dotSpread)
-        # This is kinda cool, actually: a * (b // a) == b - (b % a)
+        self.dots = self.relativeTransformation @ self.pureDots
 
-        self.translationBuffer -= amt
-        self.translation += amt
-
-        if not amt.x and not amt.y:
-            return
-
-
-    # Update the dots
-    if S.settings.value('paper/smooth_translation'):
-        self.regenerateDots(self.size())
-        #* You should be able to update the dots instead of regenerating them, but I can't get it to work,
-        #   and it doesn't actually seem any faster
-        # self.dots = (round(abs(self.translation)).data() % self.untranslatedDots)
-
-    self.updateMirror()
-    # for line in self.mirrorLines:
-        # line.translate(*amt.data())
+    # Since this is how we resize the window, don't touch the mouse if we're resizing
+    if not resizing:
+        # This is copied from moveFocus()
+        #* If the cursor is inside the window, move the cursor as well,
+        #   That way, when you move it again, it goes from where it shows it is
+        self.focusLoc.transform(transformation)
+        # This moves the cursor so its aligned with the focus
+        if S.settings['paper/use_custom_cursor']:
+            self.cursor().setPos(self.mapToGlobal(self.focusLoc.copy().toPoint()))
+        # This loops the focus
+        self.focusLocChanged()
 
     # Translate the lines
-    for line in self.lines:
-        line.translate(*amt.data())
+    self.lines = [line.transformed(transformation) for line in self.lines]
 
-    # if self.AUTO_IMPRINT_PATTERN:
-        # for line in self.patternLines:
-            # line.translate(*amt.data())
-
-    # Translate the currentLine (just the start)
+    # Translate the currentLine
     if self.currentLine is not None:
         # Because the currentLine is immutable for some reason??
-        self.currentLine = Line(self.currentLine.start + amt, self.focusLoc)
+        self.currentLine = Line(self.currentLine.start.transformed(transformation), self.focusLoc)
+        # self.currentLine.transform(transformation)
 
-    #// Actually don't translate bounds, because lines are translated, so we want bounds to be global
-    # Actually do translate bounds, because the lines ARE translated, so we want bounds to translate with them
     # Translate the bounds
     for bound in self.bounds:
-        bound += amt
+        bound.transform(transformation)
 
     self.repaint()
-    # Focus may be off because we have a new dot array
-    if S.settings.value('paper/smooth_translation'):
-        self.updateFocus()
 
-def goHome(self):
-    """ Just resets the translation back to 0 """
-    # self.translation = Point(0, 0)
-    self.translate(self.translation*-1)
+def copyTransform(self):
+    trans = self.transformation.copy() @ self._selectionTransformation
+    x = ((self.copying.size.width()  // 2) * trans[0, 0])
+    y = ((self.copying.size.height() // 2) * trans[1, 1])
+    horizontal = self._selectionRotation % 2
+    trans[0, 2] = self.focusLoc.x
+    trans[1, 2] = self.focusLoc.y
+    if horizontal:
+        trans[0, 2] -= y * 2
+        trans[1, 2] -= x * 2
+        if self._selectionRotation % 3:
+            pass
+    else:
+        trans[0, 2] -= x
+        trans[1, 2] -= y
+        if self._selectionRotation % 4:
+            pass
+            # trans[0, 2] *= -1
+            # trans[1, 2] *= -1
+
+    return trans

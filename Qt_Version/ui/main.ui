@@ -32,9 +32,6 @@
   <property name="dockNestingEnabled">
    <bool>true</bool>
   </property>
-  <!-- <property name="dockOptions">
-   <set>QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::ForceTabbedDocks|QMainWindow::GroupedDragging|QMainWindow::VerticalTabs</set>
-  </property> -->
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>true</bool>
   </property>
@@ -46,7 +43,7 @@
        <bool>true</bool>
       </property>
       <property name="focusPolicy">
-       <enum>Qt::ClickFocus</enum>
+       <enum>Qt::NoFocus</enum>
       </property>
       <property name="toolTip">
        <string>Vertical Pattern Offset</string>
@@ -77,7 +74,7 @@
     <item row="0" column="1">
      <widget class="QSlider" name="xOverlapSlider">
       <property name="focusPolicy">
-       <enum>Qt::ClickFocus</enum>
+       <enum>Qt::NoFocus</enum>
       </property>
       <property name="toolTip">
        <string>Horizontal Pattern Offset</string>
@@ -118,9 +115,6 @@
         <width>1920</width>
         <height>1080</height>
        </size>
-      </property>
-      <property name="cursor">
-       <cursorShape>BlankCursor</cursorShape>
       </property>
       <property name="mouseTracking">
        <bool>true</bool>
@@ -167,8 +161,9 @@
     <addaction name="separator"/>
     <addaction name="save"/>
     <addaction name="saveAs"/>
-    <addaction name="separator"/>
     <addaction name="menuExport_As"/>
+    <addaction name="separator"/>
+    <addaction name="preferencesMenu"/>
     <addaction name="separator"/>
     <addaction name="quit"/>
    </widget>
@@ -177,13 +172,6 @@
      <string>Edit</string>
     </property>
     <addaction name="separator"/>
-    <addaction name="undo"/>
-    <addaction name="redo"/>
-    <addaction name="copyAction"/>
-    <addaction name="cutAction"/>
-    <addaction name="pasteAction"/>
-    <addaction name="separator"/>
-    <addaction name="preferencesMenu"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -195,7 +183,6 @@
     <addaction name="showLen"/>
     <addaction name="fullscreen_"/>
     <addaction name="separator"/>
-    <addaction name="actionHome"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -215,29 +202,10 @@
     <property name="title">
      <string>Pattern</string>
     </property>
-    <widget class="QMenu" name="menuMirroring_2">
-     <property name="title">
-      <string>Mirroring</string>
-     </property>
-     <widget class="QMenu" name="menuSet_Mirror">
-      <property name="title">
-       <string>Set Mirror</string>
-      </property>
-      <addaction name="mirrorVertical"/>
-      <addaction name="mirrorHorizontal"/>
-      <addaction name="mirrorCrossing"/>
-     </widget>
-     <addaction name="mirror"/>
-     <addaction name="mirrorInvert"/>
-     <addaction name="menuSet_Mirror"/>
-    </widget>
     <addaction name="repeatButton"/>
+    <addaction name="includeHalfsies"/>
     <addaction name="addBound"/>
     <addaction name="separator"/>
-    <addaction name="menuMirroring_2"/>
-    <addaction name="separator"/>
-    <addaction name="clearAll"/>
-    <addaction name="includeHalfsies"/>
     <addaction name="restoreDefaultsButton"/>
     <addaction name="clearSelectionButton"/>
     <addaction name="imprintLines"/>
@@ -249,6 +217,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QDockWidget" name="repeatDock">
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
    <property name="features">
     <set>QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar</set>
    </property>
@@ -259,32 +230,411 @@
     <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockCentralWidget">
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <layout class="QGridLayout" name="repeatOptionsLayout">
-       <item row="0" column="2">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>th row by</string>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="2">
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="1" column="3">
+        <widget class="QComboBox" name="flipColumnOrientation">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <item>
+          <property name="text">
+           <string>None</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Vertically</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Horizontally</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QSpinBox" name="flipRow">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="minimum">
+          <number>1</number>
          </property>
         </widget>
        </item>
        <item row="0" column="3">
-        <widget class="QSpinBox" name="rowSkipAmount">
+        <widget class="QComboBox" name="flipRowOrientation">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <item>
+          <property name="text">
+           <string>None</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Vertically</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Horizontally</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_7">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>Flip every</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="flipColumn">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="displayIntegerBase">
+          <number>10</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>Flip every</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_6">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>rows</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="label_8">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>columns</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="2" column="0">
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_10">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>Rotate every</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QSpinBox" name="rotateRowAmt">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="suffix">
+          <string>°</string>
+         </property>
+         <property name="minimum">
+          <number>-360</number>
+         </property>
+         <property name="maximum">
+          <number>360</number>
+         </property>
+         <property name="singleStep">
+          <number>90</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_11">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>rows</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QSpinBox" name="rotateRow">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_12">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>Rotate every</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="rotateColumn">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QSpinBox" name="rotateColumnAmt">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="suffix">
+          <string>°</string>
+         </property>
+         <property name="minimum">
+          <number>-360</number>
+         </property>
+         <property name="maximum">
+          <number>360</number>
+         </property>
+         <property name="singleStep">
+          <number>90</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="label_13">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>columns</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="2" column="2">
+      <layout class="QGridLayout" name="gridLayout_5" columnstretch="0,0,0,0,0,0">
+       <item row="1" column="1">
+        <widget class="QComboBox" name="shearColumnDir">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>35</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>55</width>
+           <width>45</width>
            <height>16777215</height>
           </size>
          </property>
          <property name="focusPolicy">
-          <enum>Qt::ClickFocus</enum>
+          <enum>Qt::NoFocus</enum>
          </property>
-         <property name="minimum">
-          <number>-99</number>
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <item>
+          <property name="text">
+           <string>x</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>y</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_20">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>every</string>
          </property>
         </widget>
        </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_15">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>Shear</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_14">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>Shear</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="4">
+        <widget class="QLabel" name="label_16">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>rows</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="4">
+        <widget class="QLabel" name="label_17">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>columns</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="label_19">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="text">
+          <string>every</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="5">
+        <widget class="QSpinBox" name="shearRowAmt">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="suffix">
+          <string>°</string>
+         </property>
+         <property name="minimum">
+          <number>-180</number>
+         </property>
+         <property name="maximum">
+          <number>180</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QSpinBox" name="shearColumn">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QSpinBox" name="shearRow">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="5">
+        <widget class="QSpinBox" name="shearColumnAmt">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="suffix">
+          <string>°</string>
+         </property>
+         <property name="minimum">
+          <number>-180</number>
+         </property>
+         <property name="maximum">
+          <number>180</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="shearRowDir">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>35</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>45</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <item>
+          <property name="text">
+           <string>x</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>y</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="0">
+      <layout class="QGridLayout" name="repeatOptionsLayout">
        <item row="0" column="0">
         <widget class="QLabel" name="label_3">
          <property name="maximumSize">
@@ -307,7 +657,7 @@
           </size>
          </property>
          <property name="focusPolicy">
-          <enum>Qt::ClickFocus</enum>
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="minimum">
           <number>1</number>
@@ -339,20 +689,13 @@
           </size>
          </property>
          <property name="focusPolicy">
-          <enum>Qt::ClickFocus</enum>
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="minimum">
           <number>1</number>
          </property>
          <property name="value">
           <number>1</number>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="2">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>th column by</string>
          </property>
         </widget>
        </item>
@@ -365,120 +708,72 @@
           </size>
          </property>
          <property name="focusPolicy">
-          <enum>Qt::ClickFocus</enum>
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="minimum">
           <number>-99</number>
          </property>
         </widget>
        </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>columns by</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QSpinBox" name="rowSkipAmount">
+         <property name="maximumSize">
+          <size>
+           <width>55</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="minimum">
+          <number>-99</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>rows by</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
-     <item>
+     <item row="0" column="1">
       <widget class="Line" name="line">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
       </widget>
      </item>
-     <item>
-      <layout class="QGridLayout" name="gridLayout_4">
-       <item row="1" column="2">
-        <widget class="QLabel" name="label_8">
-         <property name="text">
-          <string>th column</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QSpinBox" name="flipColumn">
-         <property name="focusPolicy">
-          <enum>Qt::ClickFocus</enum>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="displayIntegerBase">
-          <number>10</number>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QSpinBox" name="flipRow">
-         <property name="focusPolicy">
-          <enum>Qt::ClickFocus</enum>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="3">
-        <widget class="QComboBox" name="flipRowOrientation">
-         <property name="focusPolicy">
-          <enum>Qt::ClickFocus</enum>
-         </property>
-         <item>
-          <property name="text">
-           <string>None</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Vertically</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Horizontally</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_7">
-         <property name="text">
-          <string>Flip every</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>th row</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string>Flip every</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="3">
-        <widget class="QComboBox" name="flipColumnOrientation">
-         <property name="focusPolicy">
-          <enum>Qt::ClickFocus</enum>
-         </property>
-         <item>
-          <property name="text">
-           <string>None</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Vertically</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Horizontally</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-      </layout>
+     <item row="1" column="2">
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="Line" name="line_4">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -905,7 +1200,7 @@
      <item>
       <widget class="QDoubleSpinBox" name="lineThickness">
        <property name="focusPolicy">
-        <enum>Qt::ClickFocus</enum>
+        <enum>Qt::NoFocus</enum>
        </property>
        <property name="wrapping">
         <bool>false</bool>
@@ -1131,8 +1426,11 @@
    <property name="text">
     <string>Fullscreen</string>
    </property>
+   <property name="toolTip">
+    <string>Go Fullscreen</string>
+   </property>
    <property name="shortcut">
-    <string>F</string>
+    <string>F11</string>
    </property>
   </action>
   <action name="repeatButton">
@@ -1320,9 +1618,6 @@
   <action name="actionHome">
    <property name="text">
     <string>Home</string>
-   </property>
-   <property name="shortcut">
-    <string>H</string>
    </property>
   </action>
   <action name="showPenBar">

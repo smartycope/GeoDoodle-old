@@ -6,27 +6,44 @@ from Cope import todo, debug, untested, confidence, flattenList
 from PyQt6.QtCore import QEvent, QFile, QLine, QLineF, QRect, QRectF, Qt
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QTransform, QPolygon, QPolygonF
 from PyQt6.QtWidgets import QFileDialog, QMainWindow, QWidget
-import Pattern
 from Line import Line
-from Point import Pair
+from Point import Point
+from time import gmtime
+from Singleton import Singleton as S
 
-from Singleton import Singleton
 
+def getFile(self, save=True, extensions=('.gdl',)):
+    # Promts the user for a filepath
+    if save:
+        file = QFileDialog.getSaveFileName(self,
+                caption='Save Pattern',
+                filter=' *'.join(('',)+extensions),
+                initialFilter=' *'.join(('',)+extensions)
+            )[0]
+    else:
+        file = QFileDialog.getOpenFileName(self,
+            caption='Load Pattern',
+            filter=' *'.join(('',)+extensions),
+            initialFilter=' *'.join(('',)+extensions)
+        )[0]
 
-def getFile(save: bool):
-        return QFileDialog.getSaveFileName()[0] if save else QFileDialog.getOpenFileName()[0]
+    if file != '' and file is not None:
+        if not file.endswith(extensions):
+            file = file + extensions[0]
 
+    return file
 
 def save(self):
-    self.exportJSON()
-    print('File Saved!')
+    if self.saveFile is None:
+        time = gmtime()
+        self.saveFile = S.settings['files/savePath'] / f'{time.tm_mon}-{time.tm_mday}-{time.tm_year} {time.tm_hour}:{time.tm_min}:{time.tm_sec}.gdl'
+    with open(self.saveFile, 'w') as f:
+        f.write(self.serialize())
+    print('Pattern Saved!')
 
 def saveAs(self):
     todo('saveAs')
     self.save()
-
-def open(self):
-    self.importJSON()
 
 def exportPNG(self):
     image = Image.new('RGB', (self.width(), self.height()), color=tuple(self.background))
@@ -54,37 +71,3 @@ def exportSVG(self):
         svg.add(svg.line(line.start.data(), line.end.data(), stroke=svgwrite.rgb(10, 10, 16, '%')))
     svg.saveas(getFile(True))
     print("SVG Exported!")
-
-def exportJSON(self):
-    file = getFile(True)
-    if len(file):
-        with open(file, 'w') as f:
-            json.dump([
-                        self.lines,
-                        self.pattern,
-                        self.bounds,
-                        [
-                            Pattern.params.xOverlap,
-                            Pattern.params.yOverlap,
-                            Pattern.params.includeHalfsies,
-                            Pattern.params.skipRows,
-                            Pattern.params.skipColumns,
-                            Pattern.params.skipRowAmt,
-                            Pattern.params.skipColumnAmt,
-                            Pattern.params.flipRows,
-                            Pattern.params.flipColumns,
-                            Pattern.params.flipRowOrient,
-                            Pattern.params.flipColumnOrient
-                        ]
-                    ], f)
-
-def importJSON(self):
-    file = getFile(False)
-    if len(file):
-        with open(file, 'rb') as f:
-            lines, pattern, bounds, params = json.load(f)
-            self.bounds = [Point(b) for b in bounds]
-            Pattern.params = Pattern._PatternParams(*params)
-            self.pattern = Pattern.Pattern.fromJson(pattern)
-            self.lines = [Line.fromJson(line) for line in lines]
-    self.updatePattern()

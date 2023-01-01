@@ -1,3 +1,3 @@
 {
-    "files": ["main.py", "main.ui", "*.py", "*.ui", "preferences.ui", "meme.ui", "repeat.ui"]
+    "files": ["meme.ui","preferences.ui","*.py","main.py","main.ui","*.ui","repeat.ui","FileManager.ui"]
 }

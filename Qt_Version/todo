@@ -1,44 +1,155 @@
 bind the mirror QActions
-
-specify a key repeat
-set up a settings file (Im pretty sure theres a Qt class for this)
-
-
+bind all QActions in Paper to their counterparts in the Window toolbar
+specify a key repeat {cm:2022-11-28}
+set up a settings file (Im pretty sure theres a Qt class for this) {cm:2022-11-28}
 undo undos too many/too few lines after mirror is changed -- maybe use indecies instead of a buffer?
-
 add the ability to add text like in LTSpice
 bind ctrl+y to redo
-
 fix all the menus -- put in a text or ui file
-
-zooming
-flipping
-add different dot formations
+ColorDialog, when esc or cancel is pressed, defaults to black instead of the previous color {f}
+changing the controls requires a restart -- add a connect function to settings that gets called any time the given setting changes {f}
+zooming {cm:2022-11-28}
+flipping {cm:2022-11-28}
+add different dot formations {cm:2022-11-28} {h}
 filling spaces
-repeating only across a specific axis
-add mouse middle click dragging do translation
-Allow the focus go offscreen properly
+repeating only across a specific axis {cm:2022-11-28}
+add mouse middle click dragging do translation {f}
+Allow the focus go offscreen properly {h}
 add curves
-AUTO_IMPRINT_PATTERN doesnt quite work yet, and the pattern colors dont work either
-
-file extensions arent automattic
-consider making mirror use patterns instead of hand mirroring all the lines
-add a rotation option to Pattern.params
+AUTO_IMPRINT_PATTERN doesnt quite work yet, and the pattern colors dont work either {h}
+goHome moves the cursor
+cursor looping is broken
+mirroring is broken {start:2022-11-30T12:51:39}
+open menu preview needs to be translated to where the lines are properly
+file extensions arent automattic {cm:2022-11-28}
+consider making mirror use patterns instead of hand mirroring all the lines {cm:2022-11-28}
+add a rotation option to Pattern.params {cm:2022-11-28}
 add a seperate shortcut to just delete the selected area and not copy it
-the toolbar (file, edit, view thing bar) is grabbing focus I think
-mirroring has an off-by-one error somewhere that makes it so you cant touch those lines
+the toolbar (file, edit, view thing bar) is grabbing focus I think {cm:2022-11-28}
+mirroring has an off-by-one error somewhere that makes it so you cant touch those lines {cm:2022-11-28}
 make shift when not being dragged toggle the current bound
-holding shift while moving with the arrow keys works, but doesnt let go until one move after you let go of shift
-change clipboard to use the actual clipboard via JSON
-if you hold down a number key, it triggers to change the color of that button
+holding shift while moving with the arrow keys works, but doesnt let go until one move after you let go of shift {cm:2022-11-28}
+consider changing clipboard to use the actual clipboard via JSON
+make it so if you hold down a number key, it triggers to change the color of that button
 add some sort of shortcuts to bring up the basic lines and/or basic chords
 just go through and play with it and fix or note any bugs that come up
-saving broke
-adding a preferences menu
-add an option to make clearAll reset the mirror or not
-figure out how to get the docks to work on the side
+saving broke {cm:2022-11-30}
+adding a preferences menu {cm:2022-11-30}
+add an option to make clearAll reset the mirror or not {h}
+figure out how to get the docks to work on the side {cm:2022-11-30}
 a custom line editor (for custom pens)
-grabbing pattern isnt working right, possibly something to do with mirroring
-space and c stop working at random points, until you click the pattern, not sure why, something grabbing focus maybe?
-
+grabbing pattern isnt working right, possibly something to do with mirroring {cm:2022-11-30}
+space and c stop working at random points, until you click the pattern, not sure why, something grabbing focus maybe? {cm:2022-11-30}
 Pair/Point could probably be optimized away from solely using floats
+menu x button makes it so you can't reopen that menu {cm:2022-11-30}
+you have to press within the menu at least once to get it to recognize any button clicks -- hack fixed {cm:2022-11-30}
+the preview pattern in the repeat menu doesn't get the x/yAmount based on the offset {cm:2022-11-30}
+if you save a pattern and open it later in a bigger window, it's not going to be big enough {cm:2022-11-30}
+esc within the color picker exits out of the entire program {cm:2022-11-30}
+the current line doesn't scale with home/end {cm:2022-11-30}
+the left/right slider buttons still aren't working properly {cm:2022-11-30}
+something's wrong with repeat... {cm:2022-11-30}
+make repeat (or at least the preview) center the pattern in the middle of the surface {cm:2022-11-30}
+cut out line doubling up on repeating patterns {cm:2022-11-30}
+turn mirroring off as you create a pattern {f} {cm:2022-11-30}
+Label is all messed up
+Add a bunch of file checking stuff {cm:2022-11-30} {c}
+    check if the file already exists so you don't overwrite it (confirmation window) {cm:2022-11-30}
+    check that you're allowed to write there {cm:2022-11-30}
+    check that you have a correct file extension, warn if you don't {cm:2022-11-30}
+fix/finish saves {cm:2022-11-30}
+add a slash to the end of the file path, and have a suggested filename {cm:2022-11-30}
+have q/middle click and e erase all line in mirror modes {f}
+number buttons don't change the color {cm:2022-11-30}
+resizing doesn't work anymore {cm:2022-11-30}
+if you make the window smaller, mirror goes off the origional size {cm:2022-11-30}
+    - toolbar goes off original size as well {cm:2022-11-30}
+allow dotSpread to be different in the x and y axies
+repeat is out of sync with the dots {cm:2022-11-30}
+repeat end pattern is out of sync with the dots as well {cm:2022-11-30}
+add dynamic width and height to image saving {cm:2022-11-30}
+The gui can certainly be optimized a lot {cm:2022-11-30}
+add a dark theme option checkbox {cm:2022-11-30} {h}
+add the ability to exclude a specific line when repeating by erasing it in the repeat menu {cm:2022-11-30}
+undo (especially with mirroring) gets desynced easily. Make undo and redo tuples to hold all the previous actions?
+make the GUI element positions relative to the size of the window, but have them cap off at a certain value {cm:2022-11-30}
+add a button that saves the previewed pattern in the repeat GUI without having to leave the menu {cm:2022-11-30} {h}
+anti-alias exported images
+add a custom button disabled image to the toolbar buttons {h}
+figure out how to invert the text color for the toolbar button numbers
+make e, if pressed on a bounds circle, erase just the bounds circle {f} {start:2022-11-30T12:46:07} {cm:2022-11-30} {duration:04m}
+consider adding arrow keys to move sliders {h}
+add reverse mirroring (so it flips the pattern you draw) {cm:2022-11-30}
+add the ability to mirror around the focus point, instead of just the center {f}
+phase out the Color class entirely {cm:2022-11-30}
+phase out all widths and heights in favor of sizes {cm:2022-11-30}
+simplify all point comparisons from before i overloaded the operators {cm:2022-11-30}
+Add a lot more to the README {f}
+add a darkmode option {h}
+add a toolbar position option {cm:2022-11-30}
+add tooltips to all the options {f}
+"show welcome menu"
+make seperate 'include halfsies' boxes for each side (aka 4 of them) {h}
+add tooltips explaining all the options {h}
+add a repeating option to offset the pattern (like stacked cannonballs instead of a checkers board) {cm:2022-11-30}
+add a reapeating option to flip the pattern every other instance {cm:2022-11-30}
+add a vsync option {h}
+add 3D!
+add allow/disallow screensaver option {h}
+add an error message if the program can't find various files (setttings file, saves folder, etc.) {h}
+add an option that lets you select which monitor you want to use (pygame.display.setmode() display flag) {h}
+add zooming in {cm:2022-11-30}
+have shift mouse scrolling change the line color
+all the menus
+hide the mouse when the ignoreMouse is true {h}
+add a setting to optionally have the mouse hidden all the time and only show the focus {cm:2022-11-30}
+add a metabox somehow? {cm:2022-11-30}
+add repeating {cm:2022-11-30}
+have a key specify the points, and have circles around the specified points {cm:2022-11-30}
+add the ability to color in areas inbetween the lines {f}
+add copy and paste functionality (select with the bounds box maybe?) {cm:2022-11-30}
+add an option that lets you put a picture as the background?
+* maybe have the repeater (somehow) recognize if it's a tesselation, and then have an x and a y setting pop up to specify the overlap.
+- Perhaps have different kinds tesselation presets?
+* consider changing the name "GeoDoodle" to "The Tesselator"
+* area selector with the mouse (specifically for an eraser) {cm:2022-11-30}
+* add capability to use more (or less) than 4 enters to select and area {cm:2022-11-30}
+* add different shapes to repeat (repeat within a square, triangle, hexagon, etc.) {h}
+- add an option to choose which
+* add lines showing the current progress of the enters area {cm:2022-11-30} {h}
+* add different colors {cm:2022-11-30}
+- the ability to color in areas between lines {cm:2022-11-30}
+    - use a recursive function that reads pixels from the surface! {cm:2022-11-30}
+- be able to change line colors {cm:2022-11-30}
+be able to end (and maybe start?) a line along a different line {f}
+- use a modifier key to be able to do such
+* add automatic dynamic tesselation repeating {cm:2022-11-30}
+- add an option to turn it on or off {cm:2022-11-30}
+* added a button that hides the metalines {cm:2022-11-30}
+add fancy repeating (with a menu) {cm:2022-11-30}
+maybe add a failsafe in case it's fullscreen and everythings stopped {cm:2022-11-30}
+add an options to make shift home/end jump more? {cm:2022-11-30}
+add mirroring (2x, 4, 6x, 8x...) {cm:2022-11-30}
+have lines scale with dotSpread {cm:2022-11-30}
+add settings menu gui {cm:2022-11-30}
+add half spacing with shift arrow keys {f}
+create an algorithm that randomly generates patterns
+add a redo function, and have it include erasing an entire pattern {cm:2022-11-30}
+add the ability to, when you push a button, end a line along another line, and have the focus reflect that {cm:2022-11-30} {h}
+add colors (attached to keys? make a toolbar?) {cm:2022-11-30}
+add sharing?
+Fix Rotation
+Add other dot formations
+Repeating rotation doesn't rotate in place
+Repeat Shearing doesn't work yet at all (figure out the trig to align with the dots)
+Add an option to have the focus either go off screen or loop
+test repeating with colors
+Add the ability to rotate the currently copied selection in icrements of 90 degrees (and transform in other ways?)
+Mirror gets scaled when it shouldn't {cm:2022-12-06}
+repeating should sync up with the original pattern
+add zooming in instead of just magnifying
+bounds can be on the same point
+shift + q activates the shift and drag event
+when in mirroring mode, and delete is pressed, delete the mirrored lines as well
+Repeat is all screwed up
+Convert everything to use QTransform and transposed vectors instead

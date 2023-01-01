@@ -25,9 +25,6 @@ class RepeatMenu(QDialog):
         Pattern.params.flipRowOrient    = self.flipRowOrientation.currentText()
         Pattern.params.flipColumns      = self.flipColumn.value()
         Pattern.params.flipColumnOrient = self.flipColumnOrientation.currentText()
-        # This is a bit of a hack. This just tells the main Paper's pattern to regenerate
-        todo('make this a signal/slot instead')
-        self.parent().paper.updatePattern()
 
     def setVisible(self, visible):
         super().setVisible(visible)
