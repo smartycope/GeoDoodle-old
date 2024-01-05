@@ -2,15 +2,17 @@
 GeoDoodle is a graph paper-like doodle program. I really like doodling on graph paper, making cool repeating patterns so I decided to automate it. It allows you to create cool patterns using various tools and features I've added. You can also load, save, or export your pattern. It is not, however, just a regular drawing program. All lines are intended to line up with the dots, or other lines.
 
 ## Installation
-It's written in modern Python using PyQt6 (never could get pyside to work for me).
-```
+It's written in modern Python using PyQt6.
+
+This *should* work, but it doesn't currently. Last I worked on this project I left it in an unworkable state, because I didn't understand git as well as I do now. I'm thinking about re-writing it again sometime soon anyway.
+```bash
 git clone https://github.com/smartycope/GeoDoodle.git
 cd GeoDoodle
 pip install -r requirements.txt
 ```
 
 ## History
-This has been my personal cutting edge project; I keep rewriting it as I learn new things. That's why there's so many old versions included. They're old and gross, but I spent so much time on them to just delete them.
+This has been my personal cutting edge project; I keep rewriting it as I learn new things. That's why there's so many old versions included. They're old and gross, but I spent too much time on them to just delete them.
 
 I first wrote it in C++ on top of a garbage freeglut API given to me, because it was my first semester of college and I was excited about this cool idea that I had and I could actually do it. Freeglut was what my assignments that semester used, so I just hacked that code, not really knowing what I was doing. Someone really needs to write new assignments for that class.
 
@@ -20,4 +22,4 @@ A couple months later, I had the idea to use Qt. It was something I'd wanted to 
 
 A few months after *that*, I took a linear algebra course and had the realization that a bunch of the problems I had with repeating patterns and keeping track of coordinates could all be solved by using matrices for coordinates and multiplying by a transformation matrix. I then rewrote the whole codebase (*again*) to use numpy to represent dots and lines instead. That solved a *ton* of conceptual problems, and allowed me to add a bunch of features like mirroring and rotating and scaling. It also cleaned a the code a ton too. 
 
-It's been a while since I've last touched this project, and it's due for another rewrite at some point. I've learned a ton more since the last rewrite, and I remember I left it with a few largeish bugs. I also didn't know how to use git very well back then (I do now), so proper branching and commits would help a bunch. I have a vauge idea of integrating a bunch of other libraries, like polars (polars is *fast*), shapely, and a couple others. Also, moving away from Qt might be nice too, but I don't know what to move to. Also, setting up some tests would help a bunch too, since I have since learned the benefits of a good test suite.
+It's been a while since I've last touched this project, and it's due for another rewrite at some point. I've learned a ton more since the last rewrite, and I remember I left it with a few largeish bugs. I also didn't know how to use git very well back then (I do now), so proper branching and commits would help a bunch. I have a vauge idea of integrating a bunch of other libraries, like OpenGL (I have an old version that uses OpenGL, but it's pretty inneficient), shapely, python-decouple, and a couple others. Also, moving away from Qt might be nice too, but I don't know what to move to. I want to have it work on mobile devices, but making Python run smoothly on Android is surprisingly difficult. Also, setting up some tests would help a bunch too. I've since learned the benefits of a good test suite.
