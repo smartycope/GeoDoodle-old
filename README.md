@@ -1,3 +1,6 @@
+### UPDATE:
+The updated version of this project is now at https://github.com/smartycope/geodoodle. This repo will no longer be updated
+
 # GeoDoodle
 GeoDoodle is a graph paper-like doodle program. I really like doodling on graph paper, making cool repeating patterns so I decided to automate it. It allows you to create cool patterns using various tools and features I've added. You can also load, save, or export your pattern. It is not, however, just a regular drawing program. All lines are intended to line up with the dots, or other lines.
 
